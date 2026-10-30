@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, PiggyBank, History, CheckCircle, Calendar, FileText } from 'lucide-react';
+import { Plus, PiggyBank, History, CheckCircle2, Calendar, FileText, X } from 'lucide-react';
 import { financialService } from '../services/financialService';
 import { SavingsGoal } from '../types';
 import { Card, PageHeader, Button, StatusBadge, Input } from '../components/common';
@@ -121,12 +121,12 @@ export const SavingsGoalsPage: React.FC = () => {
     <div className="space-y-6 max-w-5xl mx-auto">
       <PageHeader
         title="Micro-Savings Goals"
-        description="Build rainy day buffers and plan for insurance renewals with manageable daily targets."
+        description="Build rainy day emergency buffers and plan for insurance renewals with manageable daily targets."
         actions={
           <Button
             variant="primary"
             size="sm"
-            icon={<Plus size={14} />}
+            icon={<Plus size={15} />}
             onClick={() => setShowAddModal(true)}
           >
             Create Goal
@@ -136,19 +136,19 @@ export const SavingsGoalsPage: React.FC = () => {
 
       {/* Empty State */}
       {goals.length === 0 && (
-        <Card className="text-center py-12 space-y-3">
-          <div className="w-12 h-12 bg-teal-50 text-teal-700 rounded-full flex items-center justify-center mx-auto">
+        <Card className="text-center py-12 space-y-3 bg-white">
+          <div className="w-12 h-12 bg-[#FFF5EB] text-[#F28C28] border border-[#F28C28]/20 rounded-full flex items-center justify-center mx-auto">
             <PiggyBank size={24} />
           </div>
-          <h3 className="text-sm font-semibold text-slate-900">No active savings goals yet</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Create your first micro-savings goal for helmet replacement, bike insurance, or an emergency buffer.
+          <h3 className="text-base font-bold text-[#171B26]">No active savings goals yet</h3>
+          <p className="text-xs text-[#687080] max-w-sm mx-auto leading-relaxed">
+            Create your first micro-savings target for helmet replacement, bike insurance, or an emergency fuel buffer.
           </p>
           <div className="pt-2">
             <Button
               variant="primary"
               size="sm"
-              icon={<Plus size={14} />}
+              icon={<Plus size={15} />}
               onClick={() => setShowAddModal(true)}
             >
               Create First Goal
@@ -168,52 +168,53 @@ export const SavingsGoalsPage: React.FC = () => {
           return (
             <Card
               key={goal.id}
-              className="flex flex-col justify-between space-y-4 hover:border-slate-300 transition-colors"
+              hoverEffect
+              className="flex flex-col justify-between space-y-4 bg-white p-5"
             >
               <div>
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-                  <span className="text-[10px] font-mono text-slate-400 font-medium">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#E5E7EB]">
+                  <span className="text-[10px] font-mono text-[#9299A5] font-medium font-mono-num">
                     {goal.id.slice(0, 8)}
                   </span>
                   <StatusBadge status={isDone ? 'COMPLETED' : 'IN_PROGRESS'} />
                 </div>
 
-                <h3 className="font-semibold text-slate-900 text-sm leading-snug">
+                <h3 className="font-bold text-[#171B26] text-base leading-snug">
                   {goal.name}
                 </h3>
 
                 {/* Progress Bar & Amount Summary */}
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-2.5 font-mono-num">
                   <div className="flex justify-between items-baseline text-xs">
                     <div>
-                      <span className="text-[10px] text-slate-400 block uppercase font-medium">Total Saved</span>
-                      <span className="font-bold text-slate-900 text-base">
+                      <span className="text-[10px] text-[#687080] block uppercase font-bold tracking-wider font-sans">Total Saved</span>
+                      <span className="font-bold text-[#171B26] text-xl">
                         ₹{goal.currentAmount.toLocaleString('en-IN')}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] text-slate-400 block uppercase font-medium">Target</span>
-                      <span className="font-semibold text-slate-700">
+                      <span className="text-[10px] text-[#687080] block uppercase font-bold tracking-wider font-sans">Target</span>
+                      <span className="font-semibold text-[#687080]">
                         ₹{goal.targetAmount.toLocaleString('en-IN')}
                       </span>
                     </div>
                   </div>
 
-                  <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="w-full h-2.5 bg-[#F0F2F5] rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
-                        isDone ? 'bg-emerald-600' : 'bg-teal-700'
+                        isDone ? 'bg-[#16865C]' : 'bg-[#F28C28]'
                       }`}
                       style={{ width: `${percent}%` }}
                     />
                   </div>
 
-                  <div className="flex justify-between text-[11px] font-medium text-slate-500">
-                    <span>{percent}% completed</span>
+                  <div className="flex justify-between text-[11px] font-medium text-[#687080]">
+                    <span className="font-bold text-[#171B26]">{percent}% completed</span>
                     <span>
                       {isDone ? (
-                        <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                          <CheckCircle size={12} /> Target Reached
+                        <span className="text-[#16865C] font-semibold flex items-center gap-1">
+                          <CheckCircle2 size={13} /> Target Reached
                         </span>
                       ) : (
                         `₹${remaining.toLocaleString('en-IN')} remaining`
@@ -224,15 +225,15 @@ export const SavingsGoalsPage: React.FC = () => {
               </div>
 
               {/* Bottom Target Nudge & Action Buttons */}
-              <div className="space-y-3 pt-2 border-t border-slate-100">
-                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200/60 text-xs text-slate-600 space-y-1">
+              <div className="space-y-3 pt-3 border-t border-[#E5E7EB]">
+                <div className="p-3 bg-[#F7F8FA] rounded-lg border border-[#E5E7EB] text-xs text-[#687080] space-y-1 font-mono-num">
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Target Date:</span>
-                    <span className="font-medium text-slate-800">{goal.targetDate.split('T')[0]}</span>
+                    <span className="text-[#687080] font-sans">Target Date:</span>
+                    <span className="font-semibold text-[#171B26]">{goal.targetDate.split('T')[0]}</span>
                   </div>
                   {!isDone && (
-                    <div className="flex items-center justify-between text-teal-800 font-semibold pt-1 border-t border-slate-200/60 text-[11px]">
-                      <span>Suggested Daily:</span>
+                    <div className="flex items-center justify-between text-[#F28C28] font-bold pt-1 border-t border-[#E5E7EB] text-[11px]">
+                      <span className="font-sans">Suggested Daily:</span>
                       <span>₹{goal.suggestedDailySaving}/day</span>
                     </div>
                   )}
@@ -266,25 +267,25 @@ export const SavingsGoalsPage: React.FC = () => {
 
       {/* Modal: Set Up Savings Goal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4">
-          <Card className="max-w-md w-full space-y-4 shadow-xl border-slate-200">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="font-bold text-base text-slate-900">Set Up Savings Goal</h3>
+        <div className="fixed inset-0 z-50 bg-[#171B26]/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="max-w-md w-full space-y-4 shadow-2xl border-[#E5E7EB] bg-white p-6">
+            <div className="flex items-center justify-between pb-2 border-b border-[#E5E7EB]">
+              <h3 className="font-bold text-base text-[#171B26]">Set Up Savings Goal</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm"
+                className="text-[#9299A5] hover:text-[#171B26] cursor-pointer"
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
             
             {error && (
-              <div className="p-2.5 bg-rose-50 text-rose-800 text-xs rounded-lg border border-rose-200">
+              <div className="p-3 bg-[#FDF1F1] text-[#D94B4B] text-xs rounded-lg border border-[#F9D0D0]">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleCreateGoal} className="space-y-3 text-xs">
+            <form onSubmit={handleCreateGoal} className="space-y-3.5 text-xs">
               <Input
                 label="Goal Description"
                 type="text"
@@ -320,11 +321,11 @@ export const SavingsGoalsPage: React.FC = () => {
                 onChange={(e) => setNewGoal({ ...newGoal, targetDate: e.target.value })}
               />
 
-              <p className="text-[11px] text-slate-500 italic">
-                Initial deposit will be recorded once in your savings history and counted towards your progress.
+              <p className="text-[11px] text-[#687080] italic">
+                Initial deposit will be recorded in your savings history and counted toward your milestone.
               </p>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-[#E5E7EB]">
                 <Button
                   type="button"
                   variant="outline"
@@ -349,43 +350,43 @@ export const SavingsGoalsPage: React.FC = () => {
 
       {/* Modal: Add Savings Contribution */}
       {showContributeModal && selectedGoal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4">
-          <Card className="max-w-md w-full space-y-4 shadow-xl border-slate-200">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 bg-[#171B26]/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="max-w-md w-full space-y-4 shadow-2xl border-[#E5E7EB] bg-white p-6">
+            <div className="flex items-center justify-between pb-2 border-b border-[#E5E7EB]">
               <div>
-                <h3 className="font-bold text-base text-slate-900">Add Savings Contribution</h3>
-                <p className="text-xs text-slate-500">Goal: {selectedGoal.name}</p>
+                <h3 className="font-bold text-base text-[#171B26]">Add Savings Contribution</h3>
+                <p className="text-xs text-[#687080]">Goal: {selectedGoal.name}</p>
               </div>
               <button
                 onClick={() => setShowContributeModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm"
+                className="text-[#9299A5] hover:text-[#171B26] cursor-pointer"
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 
             {error && (
-              <div className="p-2.5 bg-rose-50 text-rose-800 text-xs rounded-lg border border-rose-200">
+              <div className="p-3 bg-[#FDF1F1] text-[#D94B4B] text-xs rounded-lg border border-[#F9D0D0]">
                 {error}
               </div>
             )}
 
-            <div className="p-3 bg-teal-50/70 border border-teal-200/60 rounded-lg text-xs space-y-1 text-teal-950">
+            <div className="p-3.5 bg-[#FFF5EB] border border-[#F28C28]/25 rounded-lg text-xs space-y-1.5 font-mono-num text-[#171B26]">
               <div className="flex justify-between">
-                <span>Current Total Saved:</span>
+                <span className="font-sans text-[#687080]">Current Total Saved:</span>
                 <span className="font-bold">₹{selectedGoal.currentAmount.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between">
-                <span>Target Amount:</span>
+                <span className="font-sans text-[#687080]">Target Amount:</span>
                 <span>₹{selectedGoal.targetAmount.toLocaleString('en-IN')}</span>
               </div>
-              <div className="flex justify-between text-teal-800 font-medium pt-1 border-t border-teal-200/60">
-                <span>Remaining Needed:</span>
+              <div className="flex justify-between text-[#F28C28] font-bold pt-1.5 border-t border-[#F28C28]/20">
+                <span className="font-sans">Remaining Needed:</span>
                 <span>₹{Math.max(0, selectedGoal.targetAmount - selectedGoal.currentAmount).toLocaleString('en-IN')}</span>
               </div>
             </div>
 
-            <form onSubmit={handleAddSavings} className="space-y-3 text-xs">
+            <form onSubmit={handleAddSavings} className="space-y-3.5 text-xs">
               <Input
                 label="Contribution Amount (₹)"
                 type="number"
@@ -411,7 +412,7 @@ export const SavingsGoalsPage: React.FC = () => {
                 onChange={(e) => setContribution({ ...contribution, note: e.target.value })}
               />
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-[#E5E7EB]">
                 <Button
                   type="button"
                   variant="outline"
@@ -436,57 +437,57 @@ export const SavingsGoalsPage: React.FC = () => {
 
       {/* Modal: Contribution History */}
       {showHistoryModal && selectedGoal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4">
-          <Card className="max-w-lg w-full space-y-4 shadow-xl border-slate-200 max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 bg-[#171B26]/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="max-w-lg w-full space-y-4 shadow-2xl border-[#E5E7EB] bg-white p-6 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-2 border-b border-[#E5E7EB]">
               <div>
-                <h3 className="font-bold text-base text-slate-900">Savings Contribution History</h3>
-                <p className="text-xs text-slate-500">Goal: {selectedGoal.name}</p>
+                <h3 className="font-bold text-base text-[#171B26]">Savings Contribution History</h3>
+                <p className="text-xs text-[#687080]">Goal: {selectedGoal.name}</p>
               </div>
               <button
                 onClick={() => setShowHistoryModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm"
+                className="text-[#9299A5] hover:text-[#171B26] cursor-pointer"
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg text-xs border border-slate-100">
+            <div className="flex items-center justify-between p-3.5 bg-[#F0F2F5] rounded-lg text-xs border border-[#E5E7EB] font-mono-num">
               <div>
-                <span className="text-slate-400 text-[10px] uppercase font-semibold block">Total Accumulated</span>
-                <span className="text-base font-bold text-teal-800">
+                <span className="text-[#687080] text-[10px] uppercase font-bold tracking-wider block font-sans">Total Accumulated</span>
+                <span className="text-lg font-bold text-[#171B26]">
                   ₹{selectedGoal.currentAmount.toLocaleString('en-IN')}
                 </span>
               </div>
               <div className="text-right">
-                <span className="text-slate-400 text-[10px] uppercase font-semibold block">Goal Target</span>
-                <span className="text-xs font-semibold text-slate-700">
+                <span className="text-[#687080] text-[10px] uppercase font-bold tracking-wider block font-sans">Goal Target</span>
+                <span className="text-sm font-bold text-[#687080]">
                   ₹{selectedGoal.targetAmount.toLocaleString('en-IN')}
                 </span>
               </div>
             </div>
 
-            <div className="overflow-y-auto flex-1 divide-y divide-slate-100 pr-1">
+            <div className="overflow-y-auto flex-1 divide-y divide-[#E5E7EB] pr-1">
               {(!selectedGoal.contributions || selectedGoal.contributions.length === 0) ? (
-                <div className="text-center py-8 text-xs text-slate-400">
+                <div className="text-center py-8 text-xs text-[#9299A5]">
                   No individual contributions recorded yet.
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2 py-1">
                   {selectedGoal.contributions.map((c) => (
-                    <div key={c.id} className="p-2.5 rounded-lg border border-slate-100 bg-white hover:bg-slate-50 flex items-center justify-between text-xs">
+                    <div key={c.id} className="p-3 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#F7F8FA] flex items-center justify-between text-xs">
                       <div className="space-y-0.5">
-                        <div className="font-semibold text-slate-800 flex items-center gap-1.5">
-                          <CheckCircle size={13} className="text-emerald-600" />
+                        <div className="font-bold text-[#171B26] flex items-center gap-1.5 font-mono-num">
+                          <CheckCircle2 size={14} className="text-[#16865C]" />
                           <span>₹{c.amount.toLocaleString('en-IN')}</span>
                         </div>
                         {c.note && (
-                          <p className="text-[11px] text-slate-500 italic">
+                          <p className="text-[11px] text-[#687080] italic">
                             "{c.note}"
                           </p>
                         )}
                       </div>
-                      <div className="text-right text-[11px] text-slate-400 font-mono">
+                      <div className="text-right text-[11px] text-[#9299A5] font-mono-num">
                         {c.contributionDate}
                       </div>
                     </div>
@@ -495,7 +496,7 @@ export const SavingsGoalsPage: React.FC = () => {
               )}
             </div>
 
-            <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
+            <div className="pt-3 border-t border-[#E5E7EB] flex justify-between items-center">
               <Button
                 variant="outline"
                 size="sm"
@@ -506,7 +507,7 @@ export const SavingsGoalsPage: React.FC = () => {
               <Button
                 variant="primary"
                 size="sm"
-                icon={<Plus size={13} />}
+                icon={<Plus size={14} />}
                 onClick={() => {
                   setShowHistoryModal(false);
                   openContributeModal(selectedGoal);

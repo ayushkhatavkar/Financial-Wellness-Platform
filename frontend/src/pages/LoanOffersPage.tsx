@@ -92,7 +92,6 @@ export const LoanOffersPage: React.FC = () => {
         tenureMonths: tenure,
         processingFee: fee || 0,
       });
-      // Atomically update both the assessment and the parameters that produced it
       setAssessment(result);
       setLastEvaluatedParams({
         loanAmount: amt,
@@ -116,34 +115,34 @@ export const LoanOffersPage: React.FC = () => {
     switch (verdict) {
       case 'LIKELY_AFFORDABLE':
         return {
-          icon: <CheckCircle2 size={24} className="text-emerald-700 shrink-0" />,
+          icon: <CheckCircle2 size={24} className="text-[#16865C] shrink-0" />,
           title: 'Likely Affordable',
-          tagClass: 'bg-emerald-100 text-emerald-900 border-emerald-300',
-          containerClass: 'bg-emerald-50/70 border-emerald-300',
-          summaryText: 'This loan fits within your verified monthly surplus and passes the earnings drop stress test.'
+          tagClass: 'bg-[#EDF8F3] text-[#16865C] border-[#BDE8D3]',
+          containerClass: 'bg-[#EDF8F3]/60 border-[#BDE8D3]',
+          summaryText: 'This loan comfortably fits within your verified monthly surplus and passes the seasonal drop stress test.'
         };
       case 'PROCEED_WITH_CAUTION':
         return {
-          icon: <AlertTriangle size={24} className="text-amber-700 shrink-0" />,
+          icon: <AlertTriangle size={24} className="text-[#D18A22] shrink-0" />,
           title: 'Proceed with Caution',
-          tagClass: 'bg-amber-100 text-amber-900 border-amber-300',
-          containerClass: 'bg-amber-50/70 border-amber-300',
-          summaryText: 'Manageable in normal months, but a seasonal or monsoon delivery dip will cause cash shortages.'
+          tagClass: 'bg-[#FEF9EC] text-[#D18A22] border-[#EBCB87]',
+          containerClass: 'bg-[#FEF9EC]/60 border-[#EBCB87]',
+          summaryText: 'Manageable in normal months, but a seasonal monsoon dip or delivery slow-down could cause cash shortages.'
         };
       case 'NOT_AFFORDABLE':
         return {
-          icon: <XCircle size={24} className="text-rose-700 shrink-0" />,
+          icon: <XCircle size={24} className="text-[#D94B4B] shrink-0" />,
           title: 'Not Affordable with Current Finances',
-          tagClass: 'bg-rose-100 text-rose-900 border-rose-300',
-          containerClass: 'bg-rose-50/70 border-rose-300',
-          summaryText: 'High risk of debt trap. The proposed EMI causes a cash deficit or consumes over 50% of your earnings.'
+          tagClass: 'bg-[#FDF1F1] text-[#D94B4B] border-[#F9D0D0]',
+          containerClass: 'bg-[#FDF1F1]/70 border-[#F9D0D0]',
+          summaryText: 'High risk of debt trap. The proposed EMI creates a cash deficit or consumes over 50% of your earnings.'
         };
       default:
         return {
-          icon: <HelpCircle size={24} className="text-slate-600 shrink-0" />,
+          icon: <HelpCircle size={24} className="text-[#687080] shrink-0" />,
           title: 'Insufficient Data to Assess',
-          tagClass: 'bg-slate-100 text-slate-800 border-slate-300',
-          containerClass: 'bg-slate-50 border-slate-300',
+          tagClass: 'bg-[#F0F2F5] text-[#687080] border-[#E5E7EB]',
+          containerClass: 'bg-[#F7F8FA] border-[#E5E7EB]',
           summaryText: 'A minimum of 60 days of verified transaction statements is required for borrowing capacity modeling.'
         };
     }
@@ -155,63 +154,63 @@ export const LoanOffersPage: React.FC = () => {
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* 1. Page Header */}
       <PageHeader
-        title="Can I Afford This Loan?"
-        description="Understand your repayment capacity before you borrow."
+        title="Debt-Trap Prevention & Loan Affordability"
+        description="Model and stress-test your repayment capacity against verified cash flows before borrowing."
       />
 
       {/* 2. User's Financial Position Review Cards */}
       {baseline && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-600 px-0.5">
-            <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-              <Calculator size={14} className="text-teal-700" />
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between text-xs text-[#687080] px-0.5">
+            <span className="font-bold text-[#171B26] flex items-center gap-1.5">
+              <Calculator size={15} className="text-[#F28C28]" />
               Your Verified Cash Flow Position
             </span>
-            <span className="text-[11px] text-slate-500">
+            <span className="text-[11px] text-[#9299A5] font-mono-num">
               Based on {baseline.monthsAnalyzed} month(s) of statements
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Card className="p-3 border-slate-200">
-              <span className="text-[10px] text-slate-400 block uppercase font-medium">Monthly Inflow</span>
-              <span className="text-base font-bold text-slate-900 block mt-0.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <Card hoverEffect className="p-4 bg-white">
+              <span className="text-[10px] text-[#687080] block uppercase font-bold tracking-wider">Monthly Inflow</span>
+              <span className="text-xl font-bold text-[#171B26] font-mono-num block mt-1">
                 ₹{baseline.averageMonthlyIncome.toLocaleString('en-IN')}
               </span>
-              <span className="text-[10px] text-slate-500">
+              <span className="text-[10px] text-[#9299A5] block mt-0.5 font-mono-num">
                 Conservative: ₹{baseline.conservativeMonthlyIncome.toLocaleString('en-IN')}
               </span>
             </Card>
 
-            <Card className="p-3 border-slate-200">
-              <span className="text-[10px] text-slate-400 block uppercase font-medium">Living &amp; Work Costs</span>
-              <span className="text-base font-bold text-slate-900 block mt-0.5">
+            <Card hoverEffect className="p-4 bg-white">
+              <span className="text-[10px] text-[#687080] block uppercase font-bold tracking-wider">Living &amp; Work Costs</span>
+              <span className="text-xl font-bold text-[#171B26] font-mono-num block mt-1">
                 ₹{(baseline.essentialLivingExpenses + baseline.necessaryBusinessExpenses).toLocaleString('en-IN')}
               </span>
-              <span className="text-[10px] text-slate-500">
+              <span className="text-[10px] text-[#9299A5] block mt-0.5">
                 Food, bills, fuel &amp; servicing
               </span>
             </Card>
 
-            <Card className="p-3 border-slate-200">
-              <span className="text-[10px] text-slate-400 block uppercase font-medium">Existing Debt &amp; Bills</span>
-              <span className="text-base font-bold text-slate-900 block mt-0.5">
+            <Card hoverEffect className="p-4 bg-white">
+              <span className="text-[10px] text-[#687080] block uppercase font-bold tracking-wider">Existing Debt &amp; Bills</span>
+              <span className="text-xl font-bold text-[#171B26] font-mono-num block mt-1">
                 ₹{(baseline.existingLoanCommitments + baseline.upcomingBills).toLocaleString('en-IN')}
               </span>
-              <span className="text-[10px] text-slate-500">
-                {baseline.existingLoanCommitments > 0 ? `Active loans: ₹${baseline.existingLoanCommitments}` : 'No active loans'}
+              <span className="text-[10px] text-[#9299A5] block mt-0.5 font-mono-num">
+                {baseline.existingLoanCommitments > 0 ? `Active: ₹${baseline.existingLoanCommitments}` : 'No active loans'}
               </span>
             </Card>
 
-            <Card className="p-3 border-slate-200 bg-teal-50/30">
-              <span className="text-[10px] text-teal-800 block uppercase font-semibold">Pre-Loan Surplus Buffer</span>
-              <span className={`text-base font-bold block mt-0.5 ${
-                baseline.disposableIncomeBeforeLoan >= 0 ? 'text-teal-900' : 'text-rose-700'
+            <Card hoverEffect className="p-4 bg-[#FFF5EB] border-[#F28C28]/25">
+              <span className="text-[10px] text-[#F28C28] block uppercase font-bold tracking-wider">Pre-Loan Surplus Buffer</span>
+              <span className={`text-xl font-bold font-mono-num block mt-1 ${
+                baseline.disposableIncomeBeforeLoan >= 0 ? 'text-[#171B26]' : 'text-[#D94B4B]'
               }`}>
                 ₹{baseline.disposableIncomeBeforeLoan.toLocaleString('en-IN')}
               </span>
-              <span className="text-[10px] text-teal-700">
-                Available before new loan
+              <span className="text-[10px] text-[#687080] block mt-0.5">
+                Available surplus buffer
               </span>
             </Card>
           </div>
@@ -219,24 +218,24 @@ export const LoanOffersPage: React.FC = () => {
       )}
 
       {/* 3. Interactive Loan Affordability Calculator */}
-      <Card className="p-5 border-slate-200 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+      <Card className="p-6 border-[#E5E7EB] bg-white space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E5E7EB] pb-3.5 gap-2">
           <div>
-            <h3 className="text-sm font-bold text-slate-900">Enter Proposed Loan Terms</h3>
-            <p className="text-xs text-slate-500">
+            <h3 className="text-base font-bold text-[#171B26]">Enter Proposed Loan Terms</h3>
+            <p className="text-xs text-[#687080]">
               Test any loan, emergency borrowing, or two-wheeler EMI against your actual income.
             </p>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-slate-400">Quick amounts:</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] text-[#9299A5]">Presets:</span>
             {presets.map((p) => (
               <button
                 key={p}
                 onClick={() => handlePresetSelect(p)}
-                className={`text-[11px] px-2 py-0.5 rounded border transition-colors ${
+                className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors cursor-pointer font-mono-num ${
                   loanAmount === p 
-                    ? 'bg-teal-700 text-white border-teal-700 font-semibold' 
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    ? 'bg-[#F28C28] text-white border-[#F28C28] font-bold shadow-xs' 
+                    : 'bg-[#F0F2F5] text-[#171B26] border-[#E5E7EB] hover:bg-[#E5E7EB]'
                 }`}
               >
                 ₹{(p / 1000).toFixed(0)}k
@@ -247,7 +246,7 @@ export const LoanOffersPage: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3.5 text-xs">
           <div>
-            <label className="font-semibold text-slate-700 block mb-1">
+            <label className="font-semibold text-[#171B26] block mb-1">
               Loan Amount (₹)
             </label>
             <Input
@@ -260,7 +259,7 @@ export const LoanOffersPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="font-semibold text-slate-700 block mb-1">
+            <label className="font-semibold text-[#171B26] block mb-1">
               Annual Interest Rate (% APR)
             </label>
             <Input
@@ -271,17 +270,17 @@ export const LoanOffersPage: React.FC = () => {
               max={60}
               step={0.5}
             />
-            <span className="text-[10px] text-slate-400 mt-0.5 block">0% for interest-free loans</span>
+            <span className="text-[10px] text-[#9299A5] mt-1 block">0% for interest-free loans</span>
           </div>
 
           <div>
-            <label className="font-semibold text-slate-700 block mb-1">
+            <label className="font-semibold text-[#171B26] block mb-1">
               Tenure (Months)
             </label>
             <select
               value={tenureMonths}
               onChange={(e) => setTenureMonths(Number(e.target.value))}
-              className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-600 focus:bg-white"
+              className="w-full text-xs p-2.5 bg-white border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F28C28]/20 focus:border-[#F28C28] text-[#171B26]"
             >
               <option value={3}>3 Months</option>
               <option value={6}>6 Months</option>
@@ -294,7 +293,7 @@ export const LoanOffersPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="font-semibold text-slate-700 block mb-1">
+            <label className="font-semibold text-[#171B26] block mb-1">
               Processing Fee (₹, Optional)
             </label>
             <Input
@@ -308,11 +307,11 @@ export const LoanOffersPage: React.FC = () => {
         </div>
 
         {calcError && (
-          <div className="text-xs text-rose-700 bg-rose-50 p-2.5 rounded-lg border border-rose-200 flex items-center justify-between">
+          <div className="text-xs text-[#D94B4B] bg-[#FDF1F1] p-3 rounded-lg border border-[#F9D0D0] flex items-center justify-between">
             <span>{calcError}</span>
             <button 
               onClick={() => runAffordabilityCheck(loanAmount, interestRate, tenureMonths, processingFee)}
-              className="text-rose-800 font-bold underline hover:no-underline ml-2"
+              className="text-[#D94B4B] font-bold underline hover:no-underline ml-2 cursor-pointer"
             >
               Retry
             </button>
@@ -320,37 +319,36 @@ export const LoanOffersPage: React.FC = () => {
         )}
 
         {isStale && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 bg-[#FEF9EC] border border-[#EBCB87] rounded-lg text-xs text-[#D18A22]">
             <div className="flex items-center gap-2">
-              <AlertTriangle size={16} className="text-amber-700 shrink-0" />
+              <AlertTriangle size={17} className="text-[#D18A22] shrink-0" />
               <span>
-                <strong>Inputs changed:</strong> Current form has 
+                <strong>Parameters modified:</strong> Form currently set to 
                 ₹{loanAmount.toLocaleString('en-IN')} ({tenureMonths} mos @ {interestRate}% APR). 
-                The assessment below was calculated for 
-                ₹{lastEvaluatedParams?.loanAmount.toLocaleString('en-IN')}.
+                The assessment below reflects prior inputs.
               </span>
             </div>
             <button
               onClick={() => runAffordabilityCheck(loanAmount, interestRate, tenureMonths, processingFee)}
               disabled={isCalculating}
-              className="text-xs bg-amber-700 hover:bg-amber-800 text-white font-medium shrink-0 self-end sm:self-auto py-1 px-3 rounded shadow-2xs"
+              className="text-xs bg-[#D18A22] hover:bg-[#B77619] text-white font-medium shrink-0 self-end sm:self-auto py-1.5 px-3.5 rounded-full cursor-pointer"
             >
               Recalculate Assessment
             </button>
           </div>
         )}
 
-        <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-slate-100">
-          <div className="text-xs text-slate-500">
+        <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[#E5E7EB]">
+          <div className="text-xs text-[#687080]">
             {lastEvaluatedParams && !isStale && (
-              <span className="flex items-center gap-1.5 text-emerald-700 font-medium">
-                <CheckCircle2 size={13} />
-                Assessment up to date for ₹{lastEvaluatedParams.loanAmount.toLocaleString('en-IN')} ({lastEvaluatedParams.tenureMonths} mos)
+              <span className="flex items-center gap-1.5 text-[#16865C] font-semibold font-mono-num">
+                <CheckCircle2 size={14} />
+                Calculated for ₹{lastEvaluatedParams.loanAmount.toLocaleString('en-IN')} ({lastEvaluatedParams.tenureMonths} mos @ {lastEvaluatedParams.interestRate}% APR)
               </span>
             )}
             {isStale && (
-              <span className="flex items-center gap-1.5 text-amber-700 font-medium">
-                <Clock size={13} />
+              <span className="flex items-center gap-1.5 text-[#D18A22] font-semibold">
+                <Clock size={14} />
                 Pending re-evaluation for ₹{loanAmount.toLocaleString('en-IN')}
               </span>
             )}
@@ -359,11 +357,7 @@ export const LoanOffersPage: React.FC = () => {
             variant="primary"
             onClick={() => runAffordabilityCheck(loanAmount, interestRate, tenureMonths, processingFee)}
             disabled={isCalculating || loanAmount <= 0 || tenureMonths <= 0}
-            className={`text-xs text-white px-5 py-2 flex items-center justify-center gap-1.5 transition-colors ${
-              isStale 
-                ? 'bg-amber-700 hover:bg-amber-800' 
-                : 'bg-teal-700 hover:bg-teal-800'
-            }`}
+            className="text-xs font-semibold"
           >
             {isCalculating ? <RefreshCw size={14} className="animate-spin" /> : <Calculator size={14} />}
             <span>{isCalculating ? 'Evaluating...' : isStale ? 'Recalculate Affordability' : 'Evaluate Affordability'}</span>
@@ -371,53 +365,51 @@ export const LoanOffersPage: React.FC = () => {
         </div>
       </Card>
 
-      {/* 4. Responsible Lending Assessment (5-Second Result) */}
+      {/* 4. Responsible Lending Assessment */}
       {assessment && (
         <div className={`space-y-4 transition-opacity duration-200 ${isStale ? 'opacity-85' : 'opacity-100'}`}>
           {(() => {
             const verdictUI = getVerdictBadge(assessment.verdict);
             return (
-              <div className={`p-4 rounded-xl border ${verdictUI.containerClass} space-y-3`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-3">
+              <div className={`p-5 rounded-xl border ${verdictUI.containerClass} space-y-3.5`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3.5">
                     {verdictUI.icon}
                     <div>
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${verdictUI.tagClass}`}>
+                        <span className={`inline-block text-xs font-bold px-3 py-0.5 rounded-full border ${verdictUI.tagClass}`}>
                           {verdictUI.title}
                         </span>
                         {isStale && (
-                          <span className="inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                            Outdated (Terms changed to ₹{loanAmount.toLocaleString('en-IN')})
+                          <span className="inline-block text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#FEF9EC] text-[#D18A22] border border-[#EBCB87]">
+                            Outdated Terms
                           </span>
                         )}
                       </div>
-                      <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                      <h4 className="text-sm sm:text-base font-bold text-[#171B26] leading-snug">
                         {verdictUI.summaryText}
                       </h4>
                     </div>
                   </div>
 
-                  <div className={`text-right self-end sm:self-auto bg-white/80 p-2.5 rounded-lg border shadow-2xs ${
-                    isStale ? 'border-amber-300' : 'border-slate-200/60'
-                  }`}>
-                    <span className="text-[10px] text-slate-400 block uppercase font-medium">Estimated Monthly EMI</span>
-                    <span className="text-xl font-bold text-slate-900">
+                  <div className="text-right self-end sm:self-auto bg-white p-3 rounded-lg border border-[#E5E7EB] shadow-xs">
+                    <span className="text-[10px] text-[#687080] block uppercase font-bold tracking-wider">Estimated Monthly EMI</span>
+                    <span className="text-2xl font-bold font-mono-num text-[#171B26]">
                       ₹{assessment.repaymentMetrics.monthlyEmi.toLocaleString('en-IN')}
                     </span>
-                    <span className="text-[10px] text-slate-500 block">
+                    <span className="text-[10px] text-[#9299A5] block font-mono-num mt-0.5">
                       for ₹{assessment.loanParameters.loanAmount.toLocaleString('en-IN')} ({assessment.loanParameters.tenureMonths} mos)
                     </span>
                   </div>
                 </div>
 
                 {/* Plain-Language Explanation Reasons */}
-                <div className="bg-white/90 p-3.5 rounded-lg border border-slate-200/70 space-y-2 text-xs">
-                  <span className="font-bold text-slate-800 block">Why this decision:</span>
-                  <ul className="space-y-1.5 text-slate-700">
+                <div className="bg-white p-4 rounded-lg border border-[#E5E7EB] space-y-2 text-xs">
+                  <span className="font-bold text-[#171B26] block text-xs uppercase tracking-wider">Analysis Factors:</span>
+                  <ul className="space-y-1.5 text-[#171B26]">
                     {assessment.reasons.map((r, i) => (
                       <li key={i} className="flex items-start gap-2 leading-relaxed">
-                        <span className="text-teal-700 font-bold">•</span>
+                        <span className="text-[#F28C28] font-bold">•</span>
                         <span>{r}</span>
                       </li>
                     ))}
@@ -430,40 +422,40 @@ export const LoanOffersPage: React.FC = () => {
           {/* 5. Repayment & Disposable Buffer Breakdown */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Repayment Breakdown */}
-            <Card className="p-4 border-slate-200 space-y-3">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+            <Card className="p-5 border-[#E5E7EB] bg-white space-y-3">
+              <h4 className="text-xs font-bold text-[#171B26] uppercase tracking-wider">
                 Repayment Breakdown
               </h4>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Principal Borrowed</span>
-                  <span className="font-semibold text-slate-800">
+              <div className="space-y-2 text-xs font-mono-num">
+                <div className="flex justify-between py-1.5 border-b border-[#E5E7EB]">
+                  <span className="text-[#687080] font-sans">Principal Borrowed</span>
+                  <span className="font-bold text-[#171B26]">
                     ₹{assessment.loanParameters.loanAmount.toLocaleString('en-IN')}
                   </span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Annual Interest Rate</span>
-                  <span className="font-semibold text-slate-800">
+                <div className="flex justify-between py-1.5 border-b border-[#E5E7EB]">
+                  <span className="text-[#687080] font-sans">Annual Interest Rate</span>
+                  <span className="font-bold text-[#171B26]">
                     {assessment.loanParameters.annualInterestRate}% APR
                   </span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Total Interest Payable</span>
-                  <span className="font-semibold text-amber-700">
+                <div className="flex justify-between py-1.5 border-b border-[#E5E7EB]">
+                  <span className="text-[#687080] font-sans">Total Interest Payable</span>
+                  <span className="font-bold text-[#D18A22]">
                     +₹{assessment.repaymentMetrics.totalInterest.toLocaleString('en-IN')}
                   </span>
                 </div>
                 {assessment.loanParameters.processingFee > 0 && (
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Upfront Processing Fee</span>
-                    <span className="font-semibold text-slate-800">
+                  <div className="flex justify-between py-1.5 border-b border-[#E5E7EB]">
+                    <span className="text-[#687080] font-sans">Upfront Processing Fee</span>
+                    <span className="font-bold text-[#171B26]">
                       +₹{assessment.loanParameters.processingFee.toLocaleString('en-IN')}
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between py-1.5 pt-2 text-sm font-bold bg-slate-50 px-2 rounded">
-                  <span className="text-slate-900">Total Repayment Amount</span>
-                  <span className="text-teal-900">
+                <div className="flex justify-between py-2 pt-2 text-sm font-bold bg-[#F0F2F5] px-3 rounded-lg">
+                  <span className="text-[#171B26] font-sans">Total Repayment Amount</span>
+                  <span className="text-[#171B26]">
                     ₹{assessment.repaymentMetrics.totalRepayment.toLocaleString('en-IN')}
                   </span>
                 </div>
@@ -471,35 +463,35 @@ export const LoanOffersPage: React.FC = () => {
             </Card>
 
             {/* Disposable Buffer & Debt Obligation (FOIR) */}
-            <Card className="p-4 border-slate-200 space-y-3">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+            <Card className="p-5 border-[#E5E7EB] bg-white space-y-3">
+              <h4 className="text-xs font-bold text-[#171B26] uppercase tracking-wider">
                 Cash Flow Buffer Impact
               </h4>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Disposable Buffer Before Loan</span>
-                  <span className="font-semibold text-slate-800">
+              <div className="space-y-2 text-xs font-mono-num">
+                <div className="flex justify-between py-1.5 border-b border-[#E5E7EB]">
+                  <span className="text-[#687080] font-sans">Disposable Buffer Before Loan</span>
+                  <span className="font-bold text-[#171B26]">
                     ₹{assessment.repaymentMetrics.monthlyDisposableBeforeLoan.toLocaleString('en-IN')}/mo
                   </span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Proposed Monthly EMI Deduction</span>
-                  <span className="font-semibold text-rose-600">
+                <div className="flex justify-between py-1.5 border-b border-[#E5E7EB]">
+                  <span className="text-[#687080] font-sans">Proposed Monthly EMI Deduction</span>
+                  <span className="font-bold text-[#D94B4B]">
                     -₹{assessment.repaymentMetrics.monthlyEmi.toLocaleString('en-IN')}/mo
                   </span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-100">
-                  <span className="text-slate-500">Remaining Monthly Buffer</span>
+                <div className="flex justify-between py-1.5 border-b border-[#E5E7EB]">
+                  <span className="text-[#687080] font-sans">Remaining Monthly Buffer</span>
                   <span className={`font-bold ${
-                    assessment.repaymentMetrics.remainingFinancialBuffer >= 0 ? 'text-emerald-700' : 'text-rose-700'
+                    assessment.repaymentMetrics.remainingFinancialBuffer >= 0 ? 'text-[#16865C]' : 'text-[#D94B4B]'
                   }`}>
                     ₹{assessment.repaymentMetrics.remainingFinancialBuffer.toLocaleString('en-IN')}/mo
                   </span>
                 </div>
-                <div className="flex justify-between py-1.5 pt-2 text-xs bg-slate-50 px-2 rounded">
-                  <span className="text-slate-700 font-medium">Debt-to-Income Share (FOIR)</span>
+                <div className="flex justify-between py-2 pt-2 text-xs bg-[#F0F2F5] px-3 rounded-lg">
+                  <span className="text-[#171B26] font-sans font-semibold">Debt-to-Income Share (FOIR)</span>
                   <span className={`font-bold ${
-                    assessment.repaymentMetrics.foirPercentage > 40 ? 'text-amber-700' : 'text-slate-800'
+                    assessment.repaymentMetrics.foirPercentage > 40 ? 'text-[#D18A22]' : 'text-[#171B26]'
                   }`}>
                     {assessment.repaymentMetrics.foirPercentage}% of earnings
                   </span>
@@ -508,31 +500,31 @@ export const LoanOffersPage: React.FC = () => {
             </Card>
           </div>
 
-          {/* 6. Lower-Income Stress Test Scenario (-25% Gig Payout Drop) */}
-          <Card className="p-4 border-slate-200 space-y-2.5 bg-slate-50/60">
+          {/* 6. Lower-Income Stress Test Scenario */}
+          <Card className="p-5 border-[#E5E7EB] space-y-3 bg-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <TrendingDown size={16} className="text-amber-700" />
-                <h4 className="text-xs font-bold text-slate-900">
+                <TrendingDown size={18} className="text-[#D18A22]" />
+                <h4 className="text-sm font-bold text-[#171B26]">
                   Gig Earnings Stress Test (-25% Seasonal Payout Slump)
                 </h4>
               </div>
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${
+              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
                 assessment.stressTest.passesStressTest 
-                  ? 'bg-emerald-100 text-emerald-800' 
-                  : 'bg-rose-100 text-rose-800'
+                  ? 'bg-[#EDF8F3] text-[#16865C] border border-[#BDE8D3]' 
+                  : 'bg-[#FDF1F1] text-[#D94B4B] border border-[#F9D0D0]'
               }`}>
                 {assessment.stressTest.passesStressTest ? 'Passes Stress Test' : 'Fails Stress Test'}
               </span>
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-[#687080] leading-relaxed">
               Delivery volumes fluctuate during rainy seasons, post-festival slumps, or bike repair downtime. 
-              Under a 25% drop, your monthly income falls to <strong>₹{assessment.stressTest.stressIncome.toLocaleString('en-IN')}</strong>.
+              Under a 25% drop, your monthly income falls to <strong className="text-[#171B26] font-mono-num">₹{assessment.stressTest.stressIncome.toLocaleString('en-IN')}</strong>.
             </p>
-            <div className="p-2.5 bg-white rounded-lg border border-slate-200 flex justify-between items-center text-xs">
-              <span className="text-slate-600">Remaining Buffer under 25% Drop:</span>
+            <div className="p-3 bg-[#F7F8FA] rounded-lg border border-[#E5E7EB] flex justify-between items-center text-xs font-mono-num">
+              <span className="text-[#687080] font-sans">Remaining Buffer under 25% Slump:</span>
               <span className={`font-bold text-sm ${
-                assessment.stressTest.stressDisposableAfterEmi >= 0 ? 'text-emerald-700' : 'text-rose-700'
+                assessment.stressTest.stressDisposableAfterEmi >= 0 ? 'text-[#16865C]' : 'text-[#D94B4B]'
               }`}>
                 {assessment.stressTest.stressDisposableAfterEmi >= 0 ? '+' : ''}
                 ₹{assessment.stressTest.stressDisposableAfterEmi.toLocaleString('en-IN')} / month
@@ -540,40 +532,40 @@ export const LoanOffersPage: React.FC = () => {
             </div>
           </Card>
 
-          {/* 7. Safer Alternatives & Save First / Delay Borrowing */}
-          <Card className="p-4 border-teal-200/90 bg-gradient-to-br from-white to-teal-50/30 space-y-3">
-            <div className="flex items-center gap-2 text-teal-900">
-              <PiggyBank size={18} className="text-teal-700" />
-              <h4 className="text-sm font-bold">Safer Alternatives &amp; Save First Option</h4>
+          {/* 7. Safer Alternatives & Save First Option */}
+          <Card className="p-5 border-[#E5E7EB] bg-white space-y-4">
+            <div className="flex items-center gap-2 text-[#171B26]">
+              <PiggyBank size={20} className="text-[#F28C28]" />
+              <h4 className="text-base font-bold">Safer Alternatives &amp; Save-First Alternative</h4>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
               {/* Safe borrowing capacity */}
-              <div className="p-3 bg-white rounded-lg border border-teal-100 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Maximum Safe Monthly EMI</span>
-                <div className="text-base font-bold text-teal-800">
+              <div className="p-4 bg-[#F7F8FA] rounded-lg border border-[#E5E7EB] space-y-1">
+                <span className="text-[10px] text-[#687080] uppercase font-bold tracking-wider">Maximum Safe Monthly EMI</span>
+                <div className="text-xl font-bold font-mono-num text-[#171B26]">
                   ₹{assessment.saferAlternatives.safeMaxMonthlyEmi.toLocaleString('en-IN')}/mo
                 </div>
-                <p className="text-[11px] text-slate-500">
-                  Suggested safe loan limit: ₹{assessment.saferAlternatives.safeMaxLoanAmount.toLocaleString('en-IN')}
+                <p className="text-[11px] text-[#687080] font-mono-num mt-1">
+                  Suggested safe loan ceiling: ₹{assessment.saferAlternatives.safeMaxLoanAmount.toLocaleString('en-IN')}
                 </p>
               </div>
 
               {/* Save first / delay borrowing */}
-              <div className="p-3 bg-white rounded-lg border border-teal-100 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Debt-Free Savings Alternative</span>
+              <div className="p-4 bg-[#FFF5EB] rounded-lg border border-[#F28C28]/25 space-y-1">
+                <span className="text-[10px] text-[#F28C28] uppercase font-bold tracking-wider">Debt-Free Savings Alternative</span>
                 {assessment.saferAlternatives.saveFirstMonths ? (
                   <>
-                    <div className="text-base font-bold text-emerald-700">
+                    <div className="text-xl font-bold font-mono-num text-[#16865C]">
                       Save for {assessment.saferAlternatives.saveFirstMonths} Months
                     </div>
-                    <p className="text-[11px] text-slate-600">
-                      By saving your surplus buffer into a Micro-Savings Goal, you can buy outright with <strong>₹0 in interest</strong>.
+                    <p className="text-[11px] text-[#687080] leading-relaxed mt-1">
+                      By saving your surplus buffer into a Micro-Savings Goal, you can purchase outright with <strong className="text-[#171B26]">₹0 in interest charges</strong>.
                     </p>
                   </>
                 ) : (
-                  <p className="text-[11px] text-slate-600">
-                    Focus on building a ₹3,000 emergency buffer before taking any discretionary loans.
+                  <p className="text-[11px] text-[#687080]">
+                    Focus on building a ₹3,000 emergency buffer before taking discretionary loans.
                   </p>
                 )}
               </div>
@@ -581,21 +573,21 @@ export const LoanOffersPage: React.FC = () => {
 
             {/* Alternative Tenure Comparisons */}
             {assessment.saferAlternatives.tenureComparisons.length > 0 && (
-              <div className="space-y-1.5 pt-2">
-                <span className="text-[11px] font-semibold text-slate-700 block">
+              <div className="space-y-2 pt-2">
+                <span className="text-xs font-bold text-[#171B26] block">
                   Compare Alternative Tenures:
                 </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs font-mono-num">
                   {assessment.saferAlternatives.tenureComparisons.map((c) => (
                     <div 
                       key={c.tenureMonths} 
-                      className={`p-2 rounded-lg border text-[11px] ${
-                        c.isViable ? 'bg-white border-slate-200' : 'bg-slate-100/60 border-slate-200 opacity-70'
+                      className={`p-3 rounded-lg border ${
+                        c.isViable ? 'bg-white border-[#E5E7EB]' : 'bg-[#F0F2F5] border-[#E5E7EB] opacity-65'
                       }`}
                     >
-                      <span className="font-bold text-slate-800 block">{c.tenureMonths} Months</span>
-                      <span className="text-teal-800 font-semibold block">₹{c.monthlyEmi.toLocaleString('en-IN')}/mo</span>
-                      <span className="text-[10px] text-slate-500 block">Interest: ₹{c.totalInterest.toLocaleString('en-IN')}</span>
+                      <span className="font-bold text-[#171B26] block font-sans">{c.tenureMonths} Months</span>
+                      <span className="text-[#F28C28] font-bold block mt-0.5">₹{c.monthlyEmi.toLocaleString('en-IN')}/mo</span>
+                      <span className="text-[10px] text-[#687080] block mt-0.5">Interest: ₹{c.totalInterest.toLocaleString('en-IN')}</span>
                     </div>
                   ))}
                 </div>
@@ -604,7 +596,7 @@ export const LoanOffersPage: React.FC = () => {
           </Card>
 
           {/* 8. Disclaimer */}
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center text-[11px] text-slate-500">
+          <div className="p-3.5 bg-[#F0F2F5] rounded-lg border border-[#E5E7EB] text-center text-xs text-[#687080]">
             {assessment.disclaimer}
           </div>
         </div>

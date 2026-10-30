@@ -5,13 +5,13 @@ import {
   Receipt, 
   AlertTriangle, 
   Clock, 
-  CheckCircle, 
-  Calendar, 
+  CheckCircle2, 
   Trash2, 
   Edit3, 
   History, 
   Info,
-  DollarSign
+  DollarSign,
+  X
 } from 'lucide-react';
 import { financialService } from '../services/financialService';
 import { RepaymentSchedule } from '../types';
@@ -242,10 +242,10 @@ export const RepaymentTrackerPage: React.FC = () => {
     .reduce((acc, i) => acc + i.principalRemaining, 0);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto">
       <PageHeader
         title="Repayments & Recurring Bills"
-        description="Track active loans, monitor upcoming utility bills, and record installment payments to reinforce financial trust."
+        description="Track active credit lines, monitor utility bills, and record scheduled installments to boost your Financial Trust Score."
         actions={
           <div className="flex gap-2">
             <Button
@@ -270,19 +270,21 @@ export const RepaymentTrackerPage: React.FC = () => {
 
       {/* In-App Reminders and Urgent Alerts */}
       {overdueItems.length > 0 && (
-        <div className="p-3.5 bg-rose-50 border border-rose-200/80 rounded-xl flex items-start gap-3 text-xs text-rose-950">
-          <AlertTriangle size={18} className="text-rose-600 shrink-0 mt-0.5" />
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg flex items-start gap-3.5 text-xs text-rose-950">
+          <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center shrink-0 text-fin-danger">
+            <AlertTriangle size={17} />
+          </div>
           <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-rose-900">
-                Action Required: {overdueItems.length} Overdue Payment{overdueItems.length > 1 ? 's' : ''} (₹{totalOverdueAmount.toLocaleString('en-IN')})
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="font-bold text-rose-900 text-sm">
+                Attention Required: {overdueItems.length} Overdue Payment{overdueItems.length > 1 ? 's' : ''} (₹{totalOverdueAmount.toLocaleString('en-IN')})
               </span>
-              <span className="text-[10px] bg-rose-200/60 px-2 py-0.5 rounded font-semibold text-rose-800">
-                Overdue Reminder
+              <span className="text-[11px] bg-rose-200/80 px-2.5 py-0.5 rounded-full font-semibold text-rose-800">
+                Action Pending
               </span>
             </div>
-            <p className="text-rose-800 text-[11px] mt-0.5">
-              Overdue obligations negatively impact your Financial Trust Score. Clear these commitments or log payments to keep your standing in good standing.
+            <p className="text-rose-800/90 text-xs mt-1 leading-relaxed">
+              Unsettled obligations reduce your cash-flow reliability score. Settle or record payments to preserve your platform credit standing.
             </p>
           </div>
         </div>
@@ -290,88 +292,102 @@ export const RepaymentTrackerPage: React.FC = () => {
 
       {/* KPI Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="space-y-1">
-          <span className="text-[10px] text-slate-400 block uppercase font-medium">Overdue Dues</span>
-          <div className="flex items-baseline justify-between">
-            <span className={`text-xl font-bold ${overdueItems.length > 0 ? 'text-rose-600' : 'text-slate-800'}`}>
+        <Card className="p-5">
+          <div className="text-[11px] font-semibold text-fin-muted uppercase tracking-wider">Overdue Dues</div>
+          <div className="flex items-baseline justify-between mt-2">
+            <span className={`text-2xl font-bold font-mono-num ${overdueItems.length > 0 ? 'text-fin-danger' : 'text-fin-navy'}`}>
               ₹{totalOverdueAmount.toLocaleString('en-IN')}
             </span>
-            <span className="text-xs text-slate-500 font-medium">{overdueItems.length} items</span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-fin-subtle text-fin-secondary border border-fin-border">
+              {overdueItems.length} {overdueItems.length === 1 ? 'due' : 'dues'}
+            </span>
           </div>
+          <p className="text-[11px] text-fin-secondary mt-1">Immediate settlement needed</p>
         </Card>
 
-        <Card className="space-y-1">
-          <span className="text-[10px] text-slate-400 block uppercase font-medium">Due in Next 7 Days</span>
-          <div className="flex items-baseline justify-between">
-            <span className={`text-xl font-bold ${dueSoonItems.length > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
+        <Card className="p-5">
+          <div className="text-[11px] font-semibold text-fin-muted uppercase tracking-wider">Due in Next 7 Days</div>
+          <div className="flex items-baseline justify-between mt-2">
+            <span className={`text-2xl font-bold font-mono-num ${dueSoonItems.length > 0 ? 'text-fin-warning' : 'text-fin-navy'}`}>
               ₹{dueSoonItems.reduce((acc, i) => acc + i.installmentAmount, 0).toLocaleString('en-IN')}
             </span>
-            <span className="text-xs text-slate-500 font-medium">{dueSoonItems.length} items</span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-fin-subtle text-fin-secondary border border-fin-border">
+              {dueSoonItems.length} upcoming
+            </span>
           </div>
+          <p className="text-[11px] text-fin-secondary mt-1">Scheduled for this weekly cycle</p>
         </Card>
 
-        <Card className="space-y-1">
-          <span className="text-[10px] text-slate-400 block uppercase font-medium">Active Loan Debt</span>
-          <div className="flex items-baseline justify-between">
-            <span className="text-xl font-bold text-teal-800">
+        <Card className="p-5">
+          <div className="text-[11px] font-semibold text-fin-muted uppercase tracking-wider">Active Loan Principal</div>
+          <div className="flex items-baseline justify-between mt-2">
+            <span className="text-2xl font-bold font-mono-num text-fin-navy">
               ₹{totalLoanPrincipal.toLocaleString('en-IN')}
             </span>
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-fin-orange/10 text-fin-orange border border-fin-orange/20">
               {items.filter((i) => i.facilityType === 'LOAN' && i.principalRemaining > 0).length} facilities
             </span>
           </div>
+          <p className="text-[11px] text-fin-secondary mt-1">Total outstanding credit principal</p>
         </Card>
       </div>
 
       {/* Filter Tabs & Content Table */}
-      <Card padding="none" className="overflow-hidden">
+      <Card padding="none" className="overflow-hidden border border-fin-border">
         {/* Tab Headers */}
-        <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
-          <div className="flex gap-1.5">
+        <div className="p-3.5 border-b border-fin-border flex items-center justify-between bg-fin-subtle/50 flex-wrap gap-2">
+          <div className="flex gap-2">
             <button
               onClick={() => setSelectedTab('ALL')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 selectedTab === 'ALL'
-                  ? 'bg-white text-teal-900 shadow-sm border border-slate-200/80'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white text-fin-navy shadow-xs border border-fin-border'
+                  : 'text-fin-secondary hover:text-fin-text hover:bg-white/60'
               }`}
             >
               All Commitments ({items.length})
             </button>
             <button
               onClick={() => setSelectedTab('LOAN')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 selectedTab === 'LOAN'
-                  ? 'bg-white text-teal-900 shadow-sm border border-slate-200/80'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white text-fin-navy shadow-xs border border-fin-border'
+                  : 'text-fin-secondary hover:text-fin-text hover:bg-white/60'
               }`}
             >
-              <CreditCard size={13} />
+              <CreditCard size={13} className="text-fin-orange" />
               Loans & Credit ({items.filter((i) => i.facilityType === 'LOAN').length})
             </button>
             <button
               onClick={() => setSelectedTab('BILL')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 selectedTab === 'BILL'
-                  ? 'bg-white text-teal-900 shadow-sm border border-slate-200/80'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white text-fin-navy shadow-xs border border-fin-border'
+                  : 'text-fin-secondary hover:text-fin-text hover:bg-white/60'
               }`}
             >
-              <Receipt size={13} />
+              <Receipt size={13} className="text-fin-orange" />
               Utility & Bills ({items.filter((i) => i.facilityType === 'BILL').length})
             </button>
           </div>
         </div>
 
-        {/* Empty state within table */}
-        {filteredItems.length === 0 && (
-          <div className="text-center py-12 space-y-2">
-            <p className="text-sm font-semibold text-slate-800">No commitments found</p>
-            <p className="text-xs text-slate-400">
+        {/* Loading state */}
+        {loading ? (
+          <div className="text-center py-12 text-xs text-fin-muted">
+            Loading scheduled commitments...
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="text-center py-14 space-y-3 px-4">
+            <div className="w-12 h-12 rounded-full bg-fin-subtle border border-fin-border text-fin-muted flex items-center justify-center mx-auto">
+              <Receipt size={22} />
+            </div>
+            <p className="text-sm font-semibold text-fin-text">No commitments found</p>
+            <p className="text-xs text-fin-secondary max-w-sm mx-auto">
               {selectedTab === 'LOAN'
                 ? 'No active loan lines or credit repayments added yet.'
                 : selectedTab === 'BILL'
-                ? 'No utility or recurring household bills added yet.'
+                ? 'No utility or recurring household bills recorded yet.'
                 : 'No loans or bills recorded. Add your first commitment to manage schedules.'}
             </p>
             <div className="pt-2">
@@ -385,114 +401,111 @@ export const RepaymentTrackerPage: React.FC = () => {
               </Button>
             </div>
           </div>
-        )}
-
-        {/* Table of Repayments */}
-        {filteredItems.length > 0 && (
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/80 text-slate-500 border-b border-slate-200/80 font-medium">
+              <thead className="bg-fin-subtle/70 text-fin-secondary border-b border-fin-border font-semibold text-[11px] uppercase tracking-wider">
                 <tr>
-                  <th className="py-2.5 px-4">Item & Provider</th>
-                  <th className="py-2.5 px-4">Type</th>
-                  <th className="py-2.5 px-4">Due Amount</th>
-                  <th className="py-2.5 px-4">Due Date & Urgency</th>
-                  <th className="py-2.5 px-4">Principal Remaining</th>
-                  <th className="py-2.5 px-4">Status</th>
-                  <th className="py-2.5 px-4 text-right">Actions</th>
+                  <th className="py-3 px-4">Item & Provider</th>
+                  <th className="py-3 px-4">Type</th>
+                  <th className="py-3 px-4">Due Amount</th>
+                  <th className="py-3 px-4">Due Date & Urgency</th>
+                  <th className="py-3 px-4">Principal Remaining</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-fin-border text-fin-text">
                 {filteredItems.map((rep) => {
                   const isSettled = rep.status === 'PAID' || (rep.facilityType === 'LOAN' && rep.principalRemaining <= 0);
 
                   return (
-                    <tr key={rep.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3 px-4">
-                        <span className="font-semibold text-slate-900 block leading-tight">
+                    <tr key={rep.id} className="hover:bg-fin-subtle/50 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <span className="font-semibold text-fin-navy block text-sm">
                           {rep.loanName}
                         </span>
-                        <span className="text-[11px] text-slate-400">{rep.provider}</span>
+                        <span className="text-[11px] text-fin-secondary">{rep.provider}</span>
                         {rep.notes && (
-                          <span className="text-[10px] text-slate-400 block italic mt-0.5">
+                          <span className="text-[10px] text-fin-muted block italic mt-0.5">
                             "{rep.notes}"
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide ${
+                          className={`px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide border ${
                             rep.facilityType === 'LOAN'
-                              ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/60'
-                              : 'bg-teal-50 text-teal-800 border border-teal-200/60'
+                              ? 'bg-fin-navy/10 text-fin-navy border-fin-navy/20'
+                              : 'bg-fin-orange/10 text-fin-orange border-fin-orange/20'
                           }`}
                         >
                           {rep.facilityType === 'LOAN' ? 'LOAN FACILITY' : 'UTILITY BILL'}
                         </span>
                         {rep.isRecurring && (
-                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                          <span className="text-[10px] text-fin-muted block mt-0.5">
                             Recurring ({(rep.frequency || 'MONTHLY').toLowerCase()})
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3 px-4 font-bold text-slate-900 whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-bold font-mono-num text-fin-navy whitespace-nowrap text-sm">
                         ₹{rep.installmentAmount.toLocaleString('en-IN')}
                       </td>
 
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="text-slate-700 font-medium block text-xs">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="text-fin-text font-medium block text-xs font-mono-num">
                           {rep.dueDate}
                         </span>
-                        <span className="mt-0.5 block">
+                        <span className="mt-1 block">
                           {rep.urgency === 'OVERDUE' && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-fin-danger bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
                               <AlertTriangle size={10} /> OVERDUE
                             </span>
                           )}
                           {rep.urgency === 'DUE_SOON' && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-fin-warning bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                               <Clock size={10} /> DUE SOON
                             </span>
                           )}
                           {rep.urgency === 'UPCOMING' && (
-                            <span className="text-[10px] text-slate-500 font-medium">
+                            <span className="text-[10px] text-fin-secondary font-medium px-2 py-0.5 rounded-full bg-fin-subtle border border-fin-border">
                               Upcoming
                             </span>
                           )}
                           {rep.urgency === 'SETTLED' && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                              <CheckCircle size={10} /> Settled
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-fin-success bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                              <CheckCircle2 size={10} /> Settled
                             </span>
                           )}
                         </span>
                       </td>
 
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 whitespace-nowrap font-mono-num">
                         {rep.facilityType === 'LOAN' ? (
                           <div>
-                            <span className="font-semibold text-slate-900 block">
+                            <span className="font-semibold text-fin-navy block text-xs">
                               ₹{rep.principalRemaining.toLocaleString('en-IN')}
                             </span>
                             {rep.totalPrincipal && (
-                              <span className="text-[10px] text-slate-400">
+                              <span className="text-[10px] text-fin-muted">
                                 of ₹{rep.totalPrincipal.toLocaleString('en-IN')}
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-[11px] text-slate-400 italic">
+                          <span className="text-[11px] text-fin-muted italic">
                             — (Standard Bill)
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <StatusBadge status={isSettled ? 'PAID' : rep.status === 'OVERDUE' ? 'OVERDUE' : 'UPCOMING'} />
                       </td>
 
-                      <td className="py-3 px-4 text-right whitespace-nowrap space-x-1">
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap space-x-1.5">
                         {!isSettled ? (
                           <Button
                             variant="primary"
@@ -515,25 +528,25 @@ export const RepaymentTrackerPage: React.FC = () => {
                         <button
                           onClick={() => openHistoryModal(rep)}
                           title="Payment Log"
-                          className="p-1.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors inline-block align-middle"
+                          className="p-1.5 rounded-lg text-fin-secondary hover:text-fin-navy hover:bg-fin-subtle transition-colors inline-block align-middle"
                         >
-                          <History size={14} />
+                          <History size={15} />
                         </button>
 
                         <button
                           onClick={() => openEditModal(rep)}
                           title="Edit Details"
-                          className="p-1.5 rounded text-slate-400 hover:text-teal-700 hover:bg-teal-50 transition-colors inline-block align-middle"
+                          className="p-1.5 rounded-lg text-fin-secondary hover:text-fin-orange hover:bg-fin-orange/10 transition-colors inline-block align-middle"
                         >
-                          <Edit3 size={14} />
+                          <Edit3 size={15} />
                         </button>
 
                         <button
                           onClick={() => handleDelete(rep.id, rep.loanName)}
                           title="Delete Commitment"
-                          className="p-1.5 rounded text-slate-400 hover:text-rose-700 hover:bg-rose-50 transition-colors inline-block align-middle"
+                          className="p-1.5 rounded-lg text-fin-secondary hover:text-fin-danger hover:bg-rose-50 transition-colors inline-block align-middle"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={15} />
                         </button>
                       </td>
                     </tr>
@@ -547,59 +560,59 @@ export const RepaymentTrackerPage: React.FC = () => {
 
       {/* Modal: Create or Edit Loan / Bill */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4">
-          <Card className="max-w-md w-full space-y-4 shadow-xl border-slate-200">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="font-bold text-base text-slate-900">
+        <div className="fixed inset-0 z-50 bg-fin-navy/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="max-w-md w-full space-y-4 shadow-2xl border border-fin-border bg-white rounded-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-fin-border">
+              <h3 className="font-bold text-base text-fin-navy">
                 {editingItem ? 'Edit Financial Commitment' : 'Add Financial Commitment'}
               </h3>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm"
+                className="text-fin-muted hover:text-fin-text p-1 rounded-lg transition-colors"
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 
             {error && (
-              <div className="p-2.5 bg-rose-50 text-rose-800 text-xs rounded-lg border border-rose-200">
+              <div className="p-3 bg-rose-50 text-fin-danger text-xs rounded-lg border border-rose-200">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleCreateOrUpdate} className="space-y-3 text-xs">
+            <form onSubmit={handleCreateOrUpdate} className="space-y-3.5 text-xs">
               {/* Type Switcher */}
               <div>
-                <label className="block text-slate-600 font-semibold mb-1 text-[11px] uppercase">
+                <label className="block text-fin-text font-semibold mb-1.5 text-[11px] uppercase tracking-wider">
                   Commitment Category
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, facilityType: 'LOAN' })}
-                    className={`p-2.5 rounded-lg border text-left transition-all ${
+                    className={`p-3 rounded-lg border text-left transition-all ${
                       formData.facilityType === 'LOAN'
-                        ? 'border-teal-700 bg-teal-50/70 text-teal-950 font-semibold'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        ? 'border-fin-orange bg-fin-orange/10 text-fin-navy font-semibold shadow-xs'
+                        : 'border-fin-border bg-white text-fin-secondary hover:bg-fin-subtle'
                     }`}
                   >
-                    <CreditCard size={15} className="mb-1 text-teal-700" />
-                    <span className="block text-xs">Loan / Working Capital</span>
-                    <span className="text-[10px] text-slate-500 block">Amortizes debt principal</span>
+                    <CreditCard size={16} className={`mb-1 ${formData.facilityType === 'LOAN' ? 'text-fin-orange' : 'text-fin-muted'}`} />
+                    <span className="block text-xs font-semibold">Loan / Working Capital</span>
+                    <span className="text-[10px] text-fin-muted block mt-0.5">Amortizes debt principal</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, facilityType: 'BILL' })}
-                    className={`p-2.5 rounded-lg border text-left transition-all ${
+                    className={`p-3 rounded-lg border text-left transition-all ${
                       formData.facilityType === 'BILL'
-                        ? 'border-teal-700 bg-teal-50/70 text-teal-950 font-semibold'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        ? 'border-fin-orange bg-fin-orange/10 text-fin-navy font-semibold shadow-xs'
+                        : 'border-fin-border bg-white text-fin-secondary hover:bg-fin-subtle'
                     }`}
                   >
-                    <Receipt size={15} className="mb-1 text-teal-700" />
-                    <span className="block text-xs">Ordinary Utility Bill</span>
-                    <span className="text-[10px] text-slate-500 block">Recharge, mobile, rent</span>
+                    <Receipt size={16} className={`mb-1 ${formData.facilityType === 'BILL' ? 'text-fin-orange' : 'text-fin-muted'}`} />
+                    <span className="block text-xs font-semibold">Ordinary Utility Bill</span>
+                    <span className="text-[10px] text-fin-muted block mt-0.5">Recharge, mobile, rent</span>
                   </button>
                 </div>
               </div>
@@ -661,13 +674,13 @@ export const RepaymentTrackerPage: React.FC = () => {
                 />
 
                 <div>
-                  <label className="block text-slate-600 font-semibold mb-1 text-[11px] uppercase">
+                  <label className="block text-fin-text font-semibold mb-1 text-[11px] uppercase tracking-wider">
                     Recurrence
                   </label>
                   <select
                     value={formData.frequency}
                     onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white text-slate-800"
+                    className="w-full px-3 py-2 border border-fin-border rounded-lg text-xs bg-white text-fin-text focus:outline-none focus:border-fin-orange focus:ring-1 focus:ring-fin-orange"
                   >
                     <option value="MONTHLY">Monthly</option>
                     <option value="WEEKLY">Weekly</option>
@@ -685,7 +698,7 @@ export const RepaymentTrackerPage: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               />
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-3 border-t border-fin-border">
                 <Button
                   type="button"
                   variant="outline"
@@ -710,50 +723,50 @@ export const RepaymentTrackerPage: React.FC = () => {
 
       {/* Modal: Record Manual Payment */}
       {showPaymentModal && selectedItem && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4">
-          <Card className="max-w-md w-full space-y-4 shadow-xl border-slate-200">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 bg-fin-navy/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="max-w-md w-full space-y-4 shadow-2xl border border-fin-border bg-white rounded-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-fin-border">
               <div>
-                <h3 className="font-bold text-base text-slate-900">Record Installment Payment</h3>
-                <p className="text-xs text-slate-500">{selectedItem.loanName} ({selectedItem.provider})</p>
+                <h3 className="font-bold text-base text-fin-navy">Record Installment Payment</h3>
+                <p className="text-xs text-fin-secondary">{selectedItem.loanName} ({selectedItem.provider})</p>
               </div>
               <button
                 onClick={() => setShowPaymentModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm"
+                className="text-fin-muted hover:text-fin-text p-1 rounded-lg transition-colors"
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 
             {error && (
-              <div className="p-2.5 bg-rose-50 text-rose-800 text-xs rounded-lg border border-rose-200">
+              <div className="p-3 bg-rose-50 text-fin-danger text-xs rounded-lg border border-rose-200">
                 {error}
               </div>
             )}
 
             {/* Commitment Context Card */}
-            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-xs space-y-1.5 text-slate-700">
+            <div className="p-3.5 bg-fin-subtle border border-fin-border rounded-lg text-xs space-y-2 text-fin-text">
               <div className="flex justify-between">
-                <span>Facility Category:</span>
-                <span className="font-semibold text-slate-900">{selectedItem.facilityType === 'LOAN' ? 'Loan Facility' : 'Utility Bill'}</span>
+                <span className="text-fin-secondary">Facility Category:</span>
+                <span className="font-semibold text-fin-navy">{selectedItem.facilityType === 'LOAN' ? 'Loan Facility' : 'Utility Bill'}</span>
               </div>
               <div className="flex justify-between">
-                <span>Scheduled Installment:</span>
-                <span className="font-bold text-slate-900">₹{selectedItem.installmentAmount.toLocaleString('en-IN')}</span>
+                <span className="text-fin-secondary">Scheduled Installment:</span>
+                <span className="font-bold font-mono-num text-fin-navy">₹{selectedItem.installmentAmount.toLocaleString('en-IN')}</span>
               </div>
               {selectedItem.facilityType === 'LOAN' && (
                 <div className="flex justify-between">
-                  <span>Current Principal Remaining:</span>
-                  <span className="font-semibold text-teal-800">₹{selectedItem.principalRemaining.toLocaleString('en-IN')}</span>
+                  <span className="text-fin-secondary">Current Principal Remaining:</span>
+                  <span className="font-semibold font-mono-num text-fin-orange">₹{selectedItem.principalRemaining.toLocaleString('en-IN')}</span>
                 </div>
               )}
-              <div className="flex justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200/60">
+              <div className="flex justify-between text-[11px] text-fin-muted pt-2 border-t border-fin-border">
                 <span>Current Due Date:</span>
-                <span>{selectedItem.dueDate}</span>
+                <span className="font-mono-num font-medium text-fin-secondary">{selectedItem.dueDate}</span>
               </div>
             </div>
 
-            <form onSubmit={handleRecordPayment} className="space-y-3 text-xs">
+            <form onSubmit={handleRecordPayment} className="space-y-3.5 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <Input
                   label="Amount Paid (₹)"
@@ -773,13 +786,13 @@ export const RepaymentTrackerPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-slate-600 font-semibold mb-1 text-[11px] uppercase">
+                <label className="block text-fin-text font-semibold mb-1 text-[11px] uppercase tracking-wider">
                   Payment Method
                 </label>
                 <select
                   value={paymentData.paymentMethod}
                   onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white text-slate-800"
+                  className="w-full px-3 py-2 border border-fin-border rounded-lg text-xs bg-white text-fin-text focus:outline-none focus:border-fin-orange focus:ring-1 focus:ring-fin-orange"
                 >
                   <option value="UPI">UPI (PhonePe, GPay, Paytm)</option>
                   <option value="NET_BANKING">Net Banking / IMPS</option>
@@ -790,18 +803,18 @@ export const RepaymentTrackerPage: React.FC = () => {
               </div>
 
               {selectedItem.isRecurring && (
-                <div className="p-2.5 bg-teal-50/60 border border-teal-200/60 rounded-lg space-y-1">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-teal-950">
+                <div className="p-3 bg-fin-orange/5 border border-fin-orange/20 rounded-lg space-y-1">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-fin-navy">
                     <input
                       type="checkbox"
                       checked={paymentData.advanceNextDueDate}
                       onChange={(e) => setPaymentData({ ...paymentData, advanceNextDueDate: e.target.checked })}
-                      className="rounded text-teal-700"
+                      className="rounded text-fin-orange focus:ring-fin-orange"
                     />
                     <span>Advance next due date by 1 month</span>
                   </label>
-                  <p className="text-[11px] text-teal-800 leading-tight pl-5">
-                    Automatically shifts schedule to the next monthly cycle while keeping payment history intact.
+                  <p className="text-[11px] text-fin-secondary leading-relaxed pl-5">
+                    Automatically shifts schedule to the next monthly cycle while keeping payment audit history intact.
                   </p>
                 </div>
               )}
@@ -815,14 +828,14 @@ export const RepaymentTrackerPage: React.FC = () => {
               />
 
               {/* Legal / Sandbox Disclaimer Note */}
-              <div className="p-2 rounded bg-slate-50 border border-slate-200 text-[10px] text-slate-500 leading-tight flex items-start gap-1.5">
-                <Info size={13} className="text-slate-400 shrink-0 mt-0.5" />
+              <div className="p-2.5 rounded-lg bg-fin-subtle border border-fin-border text-[11px] text-fin-muted leading-relaxed flex items-start gap-2">
+                <Info size={14} className="text-fin-secondary shrink-0 mt-0.5" />
                 <span>
-                  <strong>Manual Ledger Entry:</strong> Recording this payment updates your personal debt and cash-flow schedule. SahayakFin does not execute real-money banking debits or automated NACH transfers.
+                  <strong className="text-fin-text">Manual Ledger Entry:</strong> Recording this payment updates your personal debt and cash-flow schedule. SahayakFin does not execute real-money banking debits or automated NACH transfers.
                 </span>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-3 border-t border-fin-border">
                 <Button
                   type="button"
                   variant="outline"
@@ -847,31 +860,31 @@ export const RepaymentTrackerPage: React.FC = () => {
 
       {/* Modal: Payment History Log */}
       {showHistoryModal && selectedItem && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4">
-          <Card className="max-w-lg w-full space-y-4 shadow-xl border-slate-200 max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 bg-fin-navy/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="max-w-lg w-full space-y-4 shadow-2xl border border-fin-border bg-white rounded-xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-fin-border">
               <div>
-                <h3 className="font-bold text-base text-slate-900">Payment Audit History</h3>
-                <p className="text-xs text-slate-500">{selectedItem.loanName} ({selectedItem.provider})</p>
+                <h3 className="font-bold text-base text-fin-navy">Payment Audit History</h3>
+                <p className="text-xs text-fin-secondary">{selectedItem.loanName} ({selectedItem.provider})</p>
               </div>
               <button
                 onClick={() => setShowHistoryModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm"
+                className="text-fin-muted hover:text-fin-text p-1 rounded-lg transition-colors"
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-lg text-xs border border-slate-100">
+            <div className="grid grid-cols-2 gap-3 p-3.5 bg-fin-subtle rounded-lg text-xs border border-fin-border">
               <div>
-                <span className="text-slate-400 text-[10px] uppercase font-semibold block">Commitment</span>
-                <span className="font-bold text-slate-900">{selectedItem.loanName}</span>
+                <span className="text-fin-muted text-[10px] uppercase font-semibold tracking-wider block">Commitment</span>
+                <span className="font-bold text-fin-navy text-sm">{selectedItem.loanName}</span>
               </div>
               <div className="text-right">
-                <span className="text-slate-400 text-[10px] uppercase font-semibold block">
+                <span className="text-fin-muted text-[10px] uppercase font-semibold tracking-wider block">
                   {selectedItem.facilityType === 'LOAN' ? 'Principal Remaining' : 'Status'}
                 </span>
-                <span className="font-semibold text-slate-800">
+                <span className="font-bold font-mono-num text-fin-navy text-sm">
                   {selectedItem.facilityType === 'LOAN'
                     ? `₹${selectedItem.principalRemaining.toLocaleString('en-IN')}`
                     : selectedItem.status}
@@ -879,28 +892,28 @@ export const RepaymentTrackerPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="overflow-y-auto flex-1 divide-y divide-slate-100 pr-1">
+            <div className="overflow-y-auto flex-1 divide-y divide-fin-border pr-1">
               {(!selectedItem.payments || selectedItem.payments.length === 0) ? (
-                <div className="text-center py-8 text-xs text-slate-400">
+                <div className="text-center py-10 text-xs text-fin-muted">
                   No payment records logged yet for this commitment.
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2.5 py-1">
                   {selectedItem.payments.map((p) => (
-                    <div key={p.id} className="p-2.5 rounded-lg border border-slate-100 bg-white hover:bg-slate-50 flex items-center justify-between text-xs">
+                    <div key={p.id} className="p-3 rounded-lg border border-fin-border bg-white hover:bg-fin-subtle/50 transition-colors flex items-center justify-between text-xs">
                       <div className="space-y-0.5">
-                        <div className="font-semibold text-slate-800 flex items-center gap-1.5">
-                          <CheckCircle size={13} className="text-emerald-600" />
-                          <span>₹{p.amountPaid.toLocaleString('en-IN')}</span>
-                          <span className="text-[10px] text-slate-400 font-normal">via {p.paymentMethod}</span>
+                        <div className="font-semibold text-fin-text flex items-center gap-2">
+                          <CheckCircle2 size={14} className="text-fin-success shrink-0" />
+                          <span className="font-mono-num font-bold text-fin-navy">₹{p.amountPaid.toLocaleString('en-IN')}</span>
+                          <span className="text-[10px] text-fin-muted font-normal">via {p.paymentMethod}</span>
                         </div>
                         {p.notes && (
-                          <p className="text-[11px] text-slate-500 italic">
+                          <p className="text-[11px] text-fin-secondary italic pl-5">
                             "{p.notes}"
                           </p>
                         )}
                       </div>
-                      <div className="text-right text-[11px] text-slate-400 font-mono">
+                      <div className="text-right text-[11px] text-fin-muted font-mono-num">
                         {p.paymentDate}
                       </div>
                     </div>
@@ -909,7 +922,7 @@ export const RepaymentTrackerPage: React.FC = () => {
               )}
             </div>
 
-            <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
+            <div className="pt-3 border-t border-fin-border flex justify-between items-center">
               <Button
                 variant="outline"
                 size="sm"

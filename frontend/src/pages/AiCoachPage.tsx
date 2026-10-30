@@ -22,7 +22,6 @@ import {
   Wrench,
   HeartPulse,
   CreditCard,
-  HelpCircle,
   Calendar,
   Layers,
   ArrowRight
@@ -39,17 +38,17 @@ import { Card, PageHeader, Button, StatusBadge, Input } from '../components/comm
 const getCategoryIcon = (category: string) => {
   switch (category) {
     case 'FOOD_GROCERIES':
-      return <Utensils size={18} className="text-amber-600" />;
+      return <Utensils size={18} className="text-[#D18A22]" />;
     case 'FUEL_TRANSPORT':
-      return <Fuel size={18} className="text-blue-600" />;
+      return <Fuel size={18} className="text-[#F28C28]" />;
     case 'UTILITIES':
-      return <Smartphone size={18} className="text-indigo-600" />;
+      return <Smartphone size={18} className="text-[#17243A]" />;
     case 'BUSINESS_EXPENSE':
-      return <Wrench size={18} className="text-slate-600" />;
+      return <Wrench size={18} className="text-[#687080]" />;
     case 'HEALTHCARE':
-      return <HeartPulse size={18} className="text-rose-600" />;
+      return <HeartPulse size={18} className="text-[#D94B4B]" />;
     default:
-      return <CreditCard size={18} className="text-teal-600" />;
+      return <CreditCard size={18} className="text-[#F28C28]" />;
   }
 };
 
@@ -191,8 +190,8 @@ export const AiCoachPage: React.FC = () => {
   if (loading) {
     return (
       <div className="py-20 flex flex-col items-center justify-center space-y-3">
-        <div className="w-8 h-8 border-3 border-teal-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-slate-500 font-medium">Analyzing your verified statements...</p>
+        <div className="w-8 h-8 border-3 border-[#F28C28] border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs text-[#687080] font-medium">Analyzing your verified statements...</p>
       </div>
     );
   }
@@ -208,114 +207,114 @@ export const AiCoachPage: React.FC = () => {
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* 1. Header */}
       <PageHeader
-        title="Your Money Coach"
-        description="Understand your spending and find ways to save."
+        title="AI Financial Coach"
+        description="Understand your daily spending patterns and discover actionable cash-flow optimizations."
       />
 
-      {/* 2. Top Summary Cards (Understand within 5 seconds) */}
+      {/* 2. Top Summary Cards */}
       {analysis && (
         <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Money Received */}
-            <Card className="p-4 border-slate-200/90 shadow-xs relative overflow-hidden">
+            <Card hoverEffect className="p-4 bg-white relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-600">Money Received</span>
-                <div className="w-7 h-7 rounded-md bg-teal-50 text-teal-700 flex items-center justify-center">
-                  <ArrowDownLeft size={16} />
+                <span className="text-xs font-semibold text-[#687080] uppercase tracking-wider">Money Received</span>
+                <div className="w-8 h-8 rounded-lg bg-[#EDF8F3] text-[#16865C] flex items-center justify-center">
+                  <ArrowDownLeft size={18} />
                 </div>
               </div>
-              <div className="mt-2">
-                <div className="text-2xl font-bold text-slate-900 tracking-tight">
-                  ₹{analysis.averageMonthlyIncome.toLocaleString('en-IN')}
+              <div className="mt-2.5">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#171B26] font-mono-num tracking-tight">
+                  ₹{Number(analysis.averageMonthlyIncome).toLocaleString('en-IN')}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
+                <div className="text-[11px] text-[#687080] mt-1">
                   Monthly average earnings
                 </div>
               </div>
             </Card>
 
             {/* Card 2: Money Spent */}
-            <Card className="p-4 border-slate-200/90 shadow-xs relative overflow-hidden">
+            <Card hoverEffect className="p-4 bg-white relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-600">Money Spent</span>
-                <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center">
-                  <ArrowUpRight size={16} />
+                <span className="text-xs font-semibold text-[#687080] uppercase tracking-wider">Money Spent</span>
+                <div className="w-8 h-8 rounded-lg bg-[#F0F2F5] text-[#171B26] flex items-center justify-center">
+                  <ArrowUpRight size={18} />
                 </div>
               </div>
-              <div className="mt-2">
-                <div className="text-2xl font-bold text-slate-900 tracking-tight">
-                  ₹{analysis.averageMonthlyExpenses.toLocaleString('en-IN')}
+              <div className="mt-2.5">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#171B26] font-mono-num tracking-tight">
+                  ₹{Number(analysis.averageMonthlyExpenses).toLocaleString('en-IN')}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
+                <div className="text-[11px] text-[#687080] mt-1">
                   Monthly living & fuel costs
                 </div>
               </div>
             </Card>
 
-            {/* Card 3: Money Left (Actual current savings) */}
-            <Card className="p-4 border-slate-200/90 shadow-xs relative overflow-hidden">
+            {/* Card 3: Money Left */}
+            <Card hoverEffect className="p-4 bg-white relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-600">Money Left</span>
-                <div className={`w-7 h-7 rounded-md flex items-center justify-center ${
-                  analysis.netMonthlySavings >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                <span className="text-xs font-semibold text-[#687080] uppercase tracking-wider">Money Left</span>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                  analysis.netMonthlySavings >= 0 ? 'bg-[#EDF8F3] text-[#16865C]' : 'bg-[#FEF9EC] text-[#D18A22]'
                 }`}>
-                  <PiggyBank size={16} />
+                  <PiggyBank size={18} />
                 </div>
               </div>
-              <div className="mt-2">
-                <div className={`text-2xl font-bold tracking-tight ${
-                  analysis.netMonthlySavings >= 0 ? 'text-emerald-700' : 'text-amber-700'
+              <div className="mt-2.5">
+                <div className={`text-2xl sm:text-3xl font-extrabold font-mono-num tracking-tight ${
+                  analysis.netMonthlySavings >= 0 ? 'text-[#16865C]' : 'text-[#D18A22]'
                 }`}>
-                  ₹{analysis.netMonthlySavings.toLocaleString('en-IN')}
+                  ₹{Number(analysis.netMonthlySavings).toLocaleString('en-IN')}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1.5">
+                <div className="text-[11px] text-[#687080] mt-1 flex items-center gap-1.5 font-mono-num">
                   <span>{analysis.netMonthlySavings >= 0 ? 'Actual monthly surplus' : 'Monthly deficit'}</span>
                   {analysis.netMonthlySavings >= 0 && (
-                    <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded">
-                      {analysis.savingsRatePct}% saved
+                    <span className="text-[10px] font-bold text-[#16865C] bg-[#EDF8F3] border border-[#BDE8D3] px-1.5 py-0.2 rounded-full">
+                      {analysis.savingsRatePct}%
                     </span>
                   )}
                 </div>
               </div>
             </Card>
 
-            {/* Card 4: Potential Extra Savings (Future opportunity) */}
-            <Card className="p-4 border-teal-200/80 bg-gradient-to-br from-white to-teal-50/30 shadow-xs relative overflow-hidden">
+            {/* Card 4: Potential Extra Savings */}
+            <Card hoverEffect className="p-4 bg-white border border-[#EBCB87] relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-teal-950">Potential Extra Savings</span>
-                <div className="w-7 h-7 rounded-md bg-teal-100/70 text-teal-800 flex items-center justify-center">
-                  <Sparkles size={16} />
+                <span className="text-xs font-bold text-[#171B26] uppercase tracking-wider">Potential Savings</span>
+                <div className="w-8 h-8 rounded-lg bg-[#FEF9EC] text-[#D18A22] border border-[#EBCB87] flex items-center justify-center">
+                  <Sparkles size={18} />
                 </div>
               </div>
-              <div className="mt-2">
-                <div className="text-2xl font-bold text-teal-800 tracking-tight">
-                  +₹{analysis.potentialTotalMonthlySavings.toLocaleString('en-IN')}
-                  <span className="text-xs font-normal text-teal-700 ml-1">/mo</span>
+              <div className="mt-2.5">
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#F28C28] font-mono-num tracking-tight">
+                  +₹{Number(analysis.potentialTotalMonthlySavings).toLocaleString('en-IN')}
+                  <span className="text-xs font-normal text-[#687080] ml-1">/mo</span>
                 </div>
-                <div className="text-[11px] text-teal-900 mt-0.5 font-medium">
-                  ₹{analysis.potentialTotalAnnualSavings.toLocaleString('en-IN')}/year with simple limits
+                <div className="text-[11px] text-[#687080] mt-1 font-mono-num">
+                  ₹{Number(analysis.potentialTotalAnnualSavings).toLocaleString('en-IN')}/year with simple limits
                 </div>
               </div>
             </Card>
           </div>
 
           {/* Unified Reporting Period Banner */}
-          <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2 text-slate-700">
-              <Calendar size={14} className="text-slate-500 shrink-0" />
+          <div className="p-3 bg-white border border-[#E5E7EB] rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2 text-[#687080]">
+              <Calendar size={15} className="text-[#9299A5] shrink-0" />
               <span>
-                <strong className="font-semibold text-slate-900">Reporting Period:</strong>{' '}
+                <strong className="font-semibold text-[#171B26]">Reporting Period:</strong>{' '}
                 {analysis.reportingPeriodLabel || `Monthly average across ${analysis.monthsAnalyzed} month(s) of verified statements.`}
               </span>
             </div>
             <div>
               {analysis.isSufficient ? (
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
-                  <CheckCircle2 size={12} /> Verified Statement History
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#16865C] bg-[#EDF8F3] border border-[#BDE8D3] px-2.5 py-0.5 rounded-full">
+                  <CheckCircle2 size={13} /> Verified Statement History
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-full">
-                  <AlertCircle size={12} /> Provisional Baseline (&lt; 60 days)
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#D18A22] bg-[#FEF9EC] border border-[#EBCB87] px-2.5 py-0.5 rounded-full">
+                  <AlertCircle size={13} /> Provisional Baseline (&lt; 60 days)
                 </span>
               )}
             </div>
@@ -327,15 +326,15 @@ export const AiCoachPage: React.FC = () => {
       <div className="space-y-3.5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-slate-900">Where Can I Spend Less?</h2>
-            <p className="text-xs text-slate-500">
-              Clear monthly spending limits. Set a limit to protect your hard-earned cash without disrupting work.
+            <h2 className="text-base font-bold text-[#171B26]">Where Can I Spend Less?</h2>
+            <p className="text-xs text-[#687080]">
+              Suggested monthly spending ceilings. Set a limit to protect your hard-earned cash without disrupting delivery work.
             </p>
           </div>
           {dismissedRecs.length > 0 && (
             <button
               onClick={() => setShowDismissed(!showDismissed)}
-              className="text-xs text-slate-500 hover:text-slate-800 font-medium underline"
+              className="text-xs text-[#687080] hover:text-[#171B26] font-medium underline cursor-pointer"
             >
               {showDismissed ? 'Hide dismissed' : `View dismissed (${dismissedRecs.length})`}
             </button>
@@ -343,24 +342,24 @@ export const AiCoachPage: React.FC = () => {
         </div>
 
         {actionError && (
-          <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center justify-between">
+          <div className="p-3.5 rounded-lg bg-[#FDF1F1] border border-[#F9D0D0] text-xs text-[#D94B4B] flex items-center justify-between">
             <span>{actionError}</span>
-            <button onClick={() => setActionError(null)} className="text-rose-500 hover:text-rose-800">
-              <X size={14} />
+            <button onClick={() => setActionError(null)} className="text-[#D94B4B] hover:text-[#B91C1C] cursor-pointer">
+              <X size={15} />
             </button>
           </div>
         )}
 
         {pendingOrAcceptedRecs.length === 0 ? (
-          <Card className="p-8 text-center space-y-2 border-dashed">
-            <CheckCircle2 size={28} className="text-emerald-600 mx-auto" />
-            <h3 className="text-sm font-semibold text-slate-800">All spending is currently within healthy limits</h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto">
+          <Card className="p-8 text-center space-y-2 border-dashed bg-white">
+            <CheckCircle2 size={32} className="text-[#16865C] mx-auto" />
+            <h3 className="text-sm font-bold text-[#171B26]">All spending is currently within healthy limits</h3>
+            <p className="text-xs text-[#687080] max-w-md mx-auto">
               Your categorized outflows are well-aligned with your monthly income. Keep up the good work or ask your Money Coach below for further optimizations.
             </p>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {pendingOrAcceptedRecs.map((rec) => {
               const isAccepted = rec.status === 'ACCEPTED';
               const progressPct = rec.suggestedMonthlyLimit > 0 
@@ -370,83 +369,84 @@ export const AiCoachPage: React.FC = () => {
               return (
                 <Card 
                   key={rec.id} 
-                  className={`p-4 transition-all relative ${
-                    isAccepted ? 'border-teal-300 bg-teal-50/20' : 'border-slate-200 hover:border-slate-300'
+                  hoverEffect
+                  className={`p-5 transition-all relative bg-white ${
+                    isAccepted ? 'border-[#F28C28]/40 bg-[#FFF5EB]/30' : 'border-[#E5E7EB]'
                   }`}
                 >
                   {/* Card Header */}
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#F0F2F5] flex items-center justify-center shrink-0">
                         {getCategoryIcon(rec.category)}
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-slate-900">{rec.categoryLabel}</h3>
-                        <div className="text-[11px] text-slate-500">
-                          Actual spend: <strong className="text-slate-700">₹{rec.currentMonthlySpend.toLocaleString('en-IN')}/mo</strong>
+                        <h3 className="text-sm font-bold text-[#171B26]">{rec.categoryLabel}</h3>
+                        <div className="text-[11px] text-[#687080] font-mono-num mt-0.5">
+                          Actual spend: <strong className="text-[#171B26]">₹{rec.currentMonthlySpend.toLocaleString('en-IN')}/mo</strong>
                         </div>
                       </div>
                     </div>
 
                     <div>
                       {isAccepted ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-800 bg-teal-100 px-2 py-0.5 rounded-full">
-                          <Check size={11} /> Active Limit
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#F28C28] bg-[#FFF5EB] border border-[#F28C28]/30 px-2.5 py-0.5 rounded-full">
+                          <Check size={12} /> Active Limit
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full">
-                          Potential saving: ₹{rec.expectedMonthlySavings.toLocaleString('en-IN')}/mo
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#16865C] bg-[#EDF8F3] border border-[#BDE8D3] px-2.5 py-0.5 rounded-full font-mono-num">
+                          Save ₹{rec.expectedMonthlySavings.toLocaleString('en-IN')}/mo
                         </span>
                       )}
                     </div>
                   </div>
 
                   {/* Numbers Grid */}
-                  <div className="grid grid-cols-3 gap-2 p-2.5 mt-3 bg-white rounded-lg border border-slate-100 text-center">
+                  <div className="grid grid-cols-3 gap-2 p-3 mt-3.5 bg-[#F7F8FA] rounded-lg border border-[#E5E7EB] text-center font-mono-num">
                     <div>
-                      <span className="text-[10px] text-slate-400 block font-medium">Spent</span>
-                      <span className="text-xs font-bold text-slate-800">
+                      <span className="text-[10px] text-[#687080] block font-semibold uppercase">Spent</span>
+                      <span className="text-xs font-bold text-[#171B26]">
                         ₹{rec.currentMonthlySpend.toLocaleString('en-IN')}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 block font-medium">Suggested Limit</span>
-                      <span className="text-xs font-bold text-teal-800">
+                      <span className="text-[10px] text-[#687080] block font-semibold uppercase">Suggested</span>
+                      <span className="text-xs font-bold text-[#F28C28]">
                         ₹{rec.suggestedMonthlyLimit.toLocaleString('en-IN')}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 block font-medium">Potential Saving</span>
-                      <span className="text-xs font-bold text-emerald-700">
+                      <span className="text-[10px] text-[#687080] block font-semibold uppercase">Potential Saving</span>
+                      <span className="text-xs font-bold text-[#16865C]">
                         ₹{rec.expectedMonthlySavings.toLocaleString('en-IN')}/mo
                       </span>
                     </div>
                   </div>
 
                   {/* Simple Explanation */}
-                  <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
+                  <p className="text-xs text-[#687080] mt-3 leading-relaxed">
                     {rec.reason}
                   </p>
 
                   {/* Active Month-to-Date Tracking Bar (if accepted) */}
                   {isAccepted && (
-                    <div className="mt-3 pt-3 border-t border-slate-200/80 space-y-1.5">
-                      <div className="flex justify-between items-center text-[11px]">
-                        <span className="text-slate-500">Current Month Spending:</span>
-                        <span className={`font-semibold ${rec.isOverBudget ? 'text-rose-600' : 'text-slate-800'}`}>
+                    <div className="mt-3.5 pt-3.5 border-t border-[#E5E7EB] space-y-2">
+                      <div className="flex justify-between items-center text-[11px] font-mono-num">
+                        <span className="text-[#687080]">Current Month Spending:</span>
+                        <span className={`font-bold ${rec.isOverBudget ? 'text-[#D94B4B]' : 'text-[#171B26]'}`}>
                           ₹{rec.actualCurrentSpend.toLocaleString('en-IN')} / ₹{rec.suggestedMonthlyLimit.toLocaleString('en-IN')}
                         </span>
                       </div>
-                      <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                      <div className="w-full bg-[#E5E7EB] rounded-full h-2 overflow-hidden">
                         <div 
-                          className={`h-1.5 rounded-full ${rec.isOverBudget ? 'bg-rose-500' : 'bg-teal-600'}`}
+                          className={`h-2 rounded-full ${rec.isOverBudget ? 'bg-[#D94B4B]' : 'bg-[#F28C28]'}`}
                           style={{ width: `${progressPct}%` }}
                         />
                       </div>
-                      <div className="flex justify-between items-center text-[10px] text-slate-500">
+                      <div className="flex justify-between items-center text-[10px] text-[#687080]">
                         <span>{rec.isOverBudget ? '⚠️ Exceeding suggested limit' : '✅ Within target limit'}</span>
                         {rec.linkedGoalName && (
-                          <span className="text-teal-700 font-medium">
+                          <span className="text-[#F28C28] font-semibold">
                             Directs to: {rec.linkedGoalName}
                           </span>
                         )}
@@ -455,22 +455,22 @@ export const AiCoachPage: React.FC = () => {
                   )}
 
                   {/* Action Buttons */}
-                  <div className="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <div className="mt-4 pt-3 border-t border-[#E5E7EB] flex items-center justify-between gap-2">
                     {isAccepted ? (
                       <div className="flex items-center gap-2 w-full justify-end">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => openEditModal(rec)}
-                          className="text-xs h-7 px-2.5"
+                          className="text-xs h-7 px-3"
                         >
-                          <Edit3 size={11} className="mr-1" /> Edit Limit
+                          <Edit3 size={12} className="mr-1" /> Edit Limit
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRecommendationAction(rec.id, 'DISMISS')}
-                          className="text-xs h-7 px-2 text-slate-400 hover:text-slate-600"
+                          className="text-xs h-7 px-2 text-[#9299A5] hover:text-[#D94B4B]"
                         >
                           Remove Limit
                         </Button>
@@ -479,16 +479,16 @@ export const AiCoachPage: React.FC = () => {
                       <div className="flex items-center justify-between w-full">
                         <button
                           onClick={() => handleRecommendationAction(rec.id, 'DISMISS')}
-                          className="text-[11px] text-slate-400 hover:text-slate-600"
+                          className="text-[11px] text-[#9299A5] hover:text-[#687080] cursor-pointer"
                         >
                           Dismiss
                         </button>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => openEditModal(rec)}
-                            className="text-xs h-7 px-2 text-slate-600"
+                            className="text-xs h-7 px-2.5"
                           >
                             Customize
                           </Button>
@@ -496,7 +496,7 @@ export const AiCoachPage: React.FC = () => {
                             variant="primary"
                             size="sm"
                             onClick={() => handleRecommendationAction(rec.id, 'ACCEPT')}
-                            className="text-xs h-7 px-3 bg-teal-700 hover:bg-teal-800 text-white"
+                            className="text-xs h-7 px-3.5 font-mono-num"
                           >
                             Set Limit (₹{rec.suggestedMonthlyLimit.toLocaleString('en-IN')})
                           </Button>
@@ -512,15 +512,15 @@ export const AiCoachPage: React.FC = () => {
 
         {/* Dismissed items list (collapsible) */}
         {showDismissed && dismissedRecs.length > 0 && (
-          <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200/80 space-y-2">
-            <h4 className="text-xs font-semibold text-slate-700">Dismissed Limits</h4>
+          <div className="p-4 bg-[#F0F2F5] rounded-lg border border-[#E5E7EB] space-y-2">
+            <h4 className="text-xs font-bold text-[#171B26]">Dismissed Limits</h4>
             <div className="space-y-1.5">
               {dismissedRecs.map((d) => (
-                <div key={d.id} className="flex items-center justify-between text-xs py-1 px-2 bg-white rounded border border-slate-200">
-                  <span className="text-slate-700">{d.categoryLabel} (₹{d.currentMonthlySpend}/mo)</span>
+                <div key={d.id} className="flex items-center justify-between text-xs py-2 px-3 bg-white rounded-md border border-[#E5E7EB]">
+                  <span className="text-[#171B26] font-medium">{d.categoryLabel} (₹{d.currentMonthlySpend}/mo)</span>
                   <button
                     onClick={() => handleRecommendationAction(d.id, 'ACCEPT')}
-                    className="text-teal-700 hover:text-teal-900 font-medium text-[11px]"
+                    className="text-[#F28C28] hover:text-[#DD7416] font-semibold text-[11px] cursor-pointer"
                   >
                     Re-activate Limit
                   </button>
@@ -533,35 +533,35 @@ export const AiCoachPage: React.FC = () => {
 
       {/* 4. On-Track & Essential Operations Reassurance */}
       {onTrackCategories.length > 0 && (
-        <Card className="p-4 bg-slate-50/70 border-slate-200 space-y-2.5">
+        <Card className="p-5 bg-white border-[#E5E7EB] space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <ShieldCheck size={16} className="text-emerald-700" />
-              <h3 className="text-xs font-bold text-slate-800">
+              <ShieldCheck size={18} className="text-[#16865C]" />
+              <h3 className="text-sm font-bold text-[#171B26]">
                 Essential Work Operations &amp; Categories Within Budget
               </h3>
             </div>
-            <span className="text-[11px] text-slate-500 font-medium">
+            <span className="text-[11px] text-[#687080] font-medium">
               No arbitrary cuts applied
             </span>
           </div>
-          <p className="text-xs text-slate-600">
-            Business servicing, work repairs, and essential buffers power your daily delivery earnings and are intentionally preserved without aggressive spending reductions.
+          <p className="text-xs text-[#687080] leading-relaxed">
+            Business servicing, vehicle repairs, and essential buffers power your daily delivery earnings and are intentionally preserved without aggressive spending reductions.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
             {onTrackCategories.map((c) => (
-              <div key={c.category} className="p-2.5 bg-white rounded-md border border-slate-200/90 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center shrink-0">
+              <div key={c.category} className="p-3 bg-[#F7F8FA] rounded-md border border-[#E5E7EB] flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded bg-white border border-[#E5E7EB] flex items-center justify-center shrink-0">
                     {getCategoryIcon(c.category)}
                   </div>
                   <div>
-                    <span className="text-xs font-semibold text-slate-800 block leading-tight">{c.categoryLabel}</span>
-                    <span className="text-[10px] text-slate-500">₹{c.currentMonthlySpend.toLocaleString('en-IN')}/mo</span>
+                    <span className="text-xs font-bold text-[#171B26] block leading-tight">{c.categoryLabel}</span>
+                    <span className="text-[11px] text-[#687080] font-mono-num">₹{c.currentMonthlySpend.toLocaleString('en-IN')}/mo</span>
                   </div>
                 </div>
-                <span className="text-[10px] font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] font-semibold text-[#16865C] bg-[#EDF8F3] border border-[#BDE8D3] px-2 py-0.5 rounded-full">
                   {c.category === 'BUSINESS_EXPENSE' ? 'Work Essential' : 'Within Budget'}
                 </span>
               </div>
@@ -572,7 +572,7 @@ export const AiCoachPage: React.FC = () => {
           <div className="pt-2 text-right">
             <button
               onClick={() => setShowAllCategories(!showAllCategories)}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-teal-800 hover:text-teal-950"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[#F28C28] hover:text-[#DD7416] cursor-pointer"
             >
               <span>{showAllCategories ? 'Hide details' : `View all category spending details (${analysis?.categoryBreakdown.length || 0})`}</span>
               {showAllCategories ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -580,40 +580,40 @@ export const AiCoachPage: React.FC = () => {
           </div>
 
           {showAllCategories && analysis && (
-            <div className="mt-3 pt-3 border-t border-slate-200 space-y-2">
-              <div className="grid grid-cols-12 text-[10px] uppercase font-bold text-slate-400 px-2">
+            <div className="mt-3 pt-3 border-t border-[#E5E7EB] space-y-2">
+              <div className="grid grid-cols-12 text-[10px] uppercase font-bold text-[#9299A5] px-2">
                 <span className="col-span-5">Category</span>
                 <span className="col-span-3 text-right">Monthly Spend</span>
                 <span className="col-span-2 text-right">% of Expenses</span>
                 <span className="col-span-2 text-right">Status</span>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {analysis.categoryBreakdown.map((item) => (
                   <div 
                     key={item.category} 
-                    className="grid grid-cols-12 items-center text-xs py-1.5 px-2 bg-white rounded border border-slate-100"
+                    className="grid grid-cols-12 items-center text-xs py-2 px-3 bg-[#F7F8FA] rounded-md border border-[#E5E7EB]"
                   >
-                    <div className="col-span-5 flex items-center gap-1.5 font-medium text-slate-800">
+                    <div className="col-span-5 flex items-center gap-2 font-semibold text-[#171B26]">
                       {getCategoryIcon(item.category)}
                       <span>{item.categoryLabel}</span>
                     </div>
-                    <div className="col-span-3 text-right font-semibold text-slate-900">
+                    <div className="col-span-3 text-right font-bold text-[#171B26] font-mono-num">
                       ₹{item.currentMonthlySpend.toLocaleString('en-IN')}
                     </div>
-                    <div className="col-span-2 text-right text-slate-500">
+                    <div className="col-span-2 text-right text-[#687080] font-mono-num">
                       {item.percentageOfExpenses}%
                     </div>
                     <div className="col-span-2 text-right">
                       {item.needsReview ? (
-                        <span className="text-[10px] font-medium text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-semibold text-[#D18A22] bg-[#FEF9EC] border border-[#EBCB87] px-2 py-0.5 rounded-full">
                           Needs review
                         </span>
                       ) : item.isOpportunity ? (
-                        <span className="text-[10px] font-medium text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-semibold text-[#F28C28] bg-[#FFF5EB] border border-[#F28C28]/30 px-2 py-0.5 rounded-full">
                           Opportunity
                         </span>
                       ) : (
-                        <span className="text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-semibold text-[#16865C] bg-[#EDF8F3] border border-[#BDE8D3] px-2 py-0.5 rounded-full">
                           On track
                         </span>
                       )}
@@ -627,43 +627,43 @@ export const AiCoachPage: React.FC = () => {
       )}
 
       {/* 5. Chatbot Section: "Ask your Money Coach" */}
-      <div className="space-y-3 pt-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="space-y-3.5 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Bot size={18} className="text-teal-700" />
+            <h2 className="text-base font-bold text-[#171B26] flex items-center gap-2">
+              <Bot size={20} className="text-[#F28C28]" />
               Ask your Money Coach
             </h2>
-            <p className="text-xs text-slate-500">
-              Instant answers grounded in your verified statement earnings, fuel expenses, and trust score.
+            <p className="text-xs text-[#687080]">
+              Instant guidance grounded in your verified statement earnings, fuel expenses, and trust score.
             </p>
           </div>
 
           {/* Language Selector */}
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 self-start sm:self-auto">
-            <span className="text-[11px] text-slate-500 px-2 flex items-center gap-1">
-              <Languages size={12} /> Language:
+          <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-[#E5E7EB] self-start sm:self-auto shadow-xs">
+            <span className="text-[11px] text-[#687080] px-2 flex items-center gap-1">
+              <Languages size={13} /> Language:
             </span>
             <button
               onClick={() => setSelectedLanguage('en')}
-              className={`px-2 py-1 text-xs rounded font-medium transition-all ${
-                selectedLanguage === 'en' ? 'bg-white text-teal-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all cursor-pointer ${
+                selectedLanguage === 'en' ? 'bg-[#F28C28] text-white shadow-xs font-semibold' : 'text-[#687080] hover:text-[#171B26]'
               }`}
             >
               English
             </button>
             <button
               onClick={() => setSelectedLanguage('hi')}
-              className={`px-2 py-1 text-xs rounded font-medium transition-all ${
-                selectedLanguage === 'hi' ? 'bg-white text-teal-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all cursor-pointer ${
+                selectedLanguage === 'hi' ? 'bg-[#F28C28] text-white shadow-xs font-semibold' : 'text-[#687080] hover:text-[#171B26]'
               }`}
             >
               हिन्दी
             </button>
             <button
               onClick={() => setSelectedLanguage('mr')}
-              className={`px-2 py-1 text-xs rounded font-medium transition-all ${
-                selectedLanguage === 'mr' ? 'bg-white text-teal-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all cursor-pointer ${
+                selectedLanguage === 'mr' ? 'bg-[#F28C28] text-white shadow-xs font-semibold' : 'text-[#687080] hover:text-[#171B26]'
               }`}
             >
               मराठी
@@ -672,12 +672,12 @@ export const AiCoachPage: React.FC = () => {
         </div>
 
         {/* Quick Prompts Chips */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {quickPrompts.map((q) => (
             <button
               key={q}
               onClick={() => handleSendMessage(q)}
-              className="text-xs bg-white hover:bg-teal-50 text-slate-700 hover:text-teal-900 px-3 py-1.5 rounded-full border border-slate-200 hover:border-teal-300 transition-colors shadow-2xs font-medium"
+              className="text-xs bg-white hover:bg-[#FFF5EB] text-[#171B26] hover:text-[#F28C28] px-3.5 py-1.5 rounded-full border border-[#E5E7EB] hover:border-[#F28C28]/40 transition-colors shadow-xs font-medium cursor-pointer"
             >
               {q}
             </button>
@@ -685,17 +685,17 @@ export const AiCoachPage: React.FC = () => {
         </div>
 
         {/* Chat Feed Card */}
-        <Card className="p-0 border-slate-200 overflow-hidden flex flex-col h-[420px]">
+        <Card padding="none" className="border-[#E5E7EB] overflow-hidden flex flex-col h-[440px] bg-white">
           {/* Messages scroll box */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-slate-50/40">
+          <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-[#F7F8FA]">
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2">
-                <div className="w-10 h-10 rounded-full bg-teal-100/60 text-teal-800 flex items-center justify-center">
-                  <Bot size={20} />
+              <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
+                <div className="w-12 h-12 rounded-full bg-[#FFF5EB] text-[#F28C28] border border-[#F28C28]/25 flex items-center justify-center">
+                  <Bot size={24} />
                 </div>
-                <h4 className="text-sm font-semibold text-slate-800">How can I help you today?</h4>
-                <p className="text-xs text-slate-500 max-w-sm">
-                  Click any quick question above or ask about your fuel spending, how to save for bike repairs, or how to boost your financial score.
+                <h4 className="text-base font-bold text-[#171B26]">How can I assist your cash flow today?</h4>
+                <p className="text-xs text-[#687080] max-w-sm">
+                  Click any quick question above or ask about your fuel spending, how to save for vehicle repairs, or how to boost your financial score.
                 </p>
               </div>
             ) : (
@@ -706,21 +706,21 @@ export const AiCoachPage: React.FC = () => {
                     key={m.id}
                     className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                   >
-                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-1 px-1">
-                      <span>{isUser ? 'You' : 'SahayakFin Money Coach'}</span>
+                    <div className="flex items-center gap-1.5 text-[10px] text-[#9299A5] mb-1 px-1">
+                      <span className="font-semibold">{isUser ? 'You' : 'SahayakFin Money Coach'}</span>
                       <span>•</span>
-                      <span>{m.createdAt}</span>
+                      <span className="font-mono-num">{m.createdAt}</span>
                       {!isUser && m.isAiPowered && (
-                        <span className="text-teal-700 font-semibold bg-teal-50 px-1 rounded">
+                        <span className="text-[#F28C28] font-bold bg-[#FFF5EB] px-1.5 py-0.2 rounded border border-[#F28C28]/20">
                           AI
                         </span>
                       )}
                     </div>
                     <div
-                      className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed ${
                         isUser
-                          ? 'bg-teal-700 text-white rounded-br-none shadow-xs'
-                          : 'bg-white text-slate-800 border border-slate-200/80 rounded-bl-none shadow-xs whitespace-pre-line'
+                          ? 'bg-[#17243A] text-white rounded-br-none shadow-sm'
+                          : 'bg-white text-[#171B26] border border-[#E5E7EB] rounded-bl-none shadow-xs whitespace-pre-line'
                       }`}
                     >
                       {m.content}
@@ -728,12 +728,12 @@ export const AiCoachPage: React.FC = () => {
 
                     {/* Follow-up suggestion pills */}
                     {!isUser && m.suggestedFollowups && m.suggestedFollowups.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
+                      <div className="flex flex-wrap gap-1.5 mt-2">
                         {m.suggestedFollowups.map((f) => (
                           <button
                             key={f}
                             onClick={() => handleSendMessage(f)}
-                            className="text-[11px] bg-white hover:bg-teal-50 text-slate-600 hover:text-teal-900 px-2 py-0.5 rounded border border-slate-200 transition-colors"
+                            className="text-[11px] bg-white hover:bg-[#FFF5EB] text-[#687080] hover:text-[#F28C28] px-2.5 py-1 rounded-full border border-[#E5E7EB] hover:border-[#F28C28]/40 transition-colors cursor-pointer"
                           >
                             ↳ {f}
                           </button>
@@ -748,8 +748,8 @@ export const AiCoachPage: React.FC = () => {
           </div>
 
           {/* Input & Send Bar */}
-          <div className="p-3 bg-white border-t border-slate-200 space-y-2">
-            <div className="flex items-center gap-2">
+          <div className="p-3.5 bg-white border-t border-[#E5E7EB] space-y-2">
+            <div className="flex items-center gap-2.5">
               <input
                 type="text"
                 value={chatInput}
@@ -757,29 +757,30 @@ export const AiCoachPage: React.FC = () => {
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Ask anything about your money, bills, or savings..."
                 disabled={isSending}
-                className="flex-1 text-xs px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-600 focus:bg-white"
+                className="flex-1 text-xs sm:text-sm px-4 py-2.5 bg-[#F7F8FA] border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F28C28]/20 focus:border-[#F28C28] focus:bg-white text-[#171B26] placeholder:text-[#9299A5]"
               />
               <Button
                 variant="primary"
                 onClick={() => handleSendMessage()}
                 disabled={!chatInput.trim() || isSending}
-                className="h-9 px-4 bg-teal-700 hover:bg-teal-800 text-white shrink-0 flex items-center gap-1.5 text-xs"
+                className="h-10 px-5 shrink-0 flex items-center gap-2 text-xs sm:text-sm"
               >
-                <Send size={13} />
+                <Send size={14} />
                 <span>Send</span>
               </Button>
               {messages.length > 0 && (
                 <button
                   onClick={handleClearChat}
                   title="Clear conversation"
-                  className="p-2 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
+                  className="p-2.5 text-[#9299A5] hover:text-[#D94B4B] rounded-lg transition-colors cursor-pointer"
+                  aria-label="Clear chat"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={18} />
                 </button>
               )}
             </div>
 
-            <div className="text-[11px] text-slate-500 text-center">
+            <div className="text-[11px] text-[#9299A5] text-center">
               SahayakFin Money Coach provides guidance based on verified statement data. We never debit your accounts or share your data.
             </div>
           </div>
@@ -788,28 +789,28 @@ export const AiCoachPage: React.FC = () => {
 
       {/* 6. Edit Recommendation / Link to Goal Modal */}
       {editingRec && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-5 space-y-4 border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-50 bg-[#171B26]/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4 border border-[#E5E7EB]">
+            <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
+                <h3 className="text-base font-bold text-[#171B26]">
                   Customize Limit: {editingRec.categoryLabel}
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[#687080]">
                   Adjust your monthly budget ceiling and link saved surplus to a goal.
                 </p>
               </div>
               <button 
                 onClick={() => setEditingRec(null)} 
-                className="text-slate-400 hover:text-slate-600"
+                className="text-[#9299A5] hover:text-[#171B26] cursor-pointer"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-3.5 text-xs">
               <div>
-                <label className="font-medium text-slate-700 block mb-1">
+                <label className="font-semibold text-[#171B26] block mb-1">
                   Monthly Spending Limit (₹)
                 </label>
                 <Input
@@ -819,36 +820,36 @@ export const AiCoachPage: React.FC = () => {
                   min={0}
                   step={100}
                 />
-                <span className="text-[11px] text-slate-400 mt-0.5 block">
+                <span className="text-[11px] text-[#687080] mt-1 block font-mono-num">
                   Current monthly spend: ₹{editingRec.currentMonthlySpend.toLocaleString('en-IN')}
                 </span>
               </div>
 
               {/* Real-time estimated savings preview */}
-              <div className="p-3 bg-teal-50/70 border border-teal-200/80 rounded-lg text-teal-950 space-y-1">
-                <span className="font-semibold block">Expected Monthly Savings:</span>
-                <span className="text-base font-bold text-teal-900">
-                  ₹{Math.max(0, editingRec.currentMonthlySpend - customLimit).toLocaleString('en-IN')}/month
+              <div className="p-3.5 bg-[#FFF5EB] border border-[#F28C28]/25 rounded-lg text-[#171B26] space-y-1 font-mono-num">
+                <span className="font-bold text-xs text-[#F28C28] block uppercase tracking-wider">Expected Monthly Savings:</span>
+                <span className="text-lg font-bold text-[#171B26] block">
+                  ₹{Math.max(0, editingRec.currentMonthlySpend - customLimit).toLocaleString('en-IN')} / month
                 </span>
-                <span className="text-[11px] text-teal-800 block">
+                <span className="text-[11px] text-[#687080] block">
                   ≈ ₹{(Math.max(0, editingRec.currentMonthlySpend - customLimit) * 12).toLocaleString('en-IN')} annual savings
                 </span>
               </div>
 
               {/* Link to Savings Goal */}
               <div>
-                <label className="font-medium text-slate-700 block mb-1">
+                <label className="font-semibold text-[#171B26] block mb-1">
                   Direct Saved Surplus to Savings Goal (Optional)
                 </label>
                 {savingsGoals.length === 0 ? (
-                  <p className="text-[11px] text-slate-500 italic">
+                  <p className="text-[11px] text-[#9299A5] italic">
                     No active savings goals found. Create one in 'Savings Goals' to channel saved money automatically.
                   </p>
                 ) : (
                   <select
                     value={selectedGoalId}
                     onChange={(e) => setSelectedGoalId(e.target.value)}
-                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-600 focus:bg-white"
+                    className="w-full text-xs p-2.5 bg-[#F7F8FA] border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F28C28]/20 focus:border-[#F28C28] text-[#171B26]"
                   >
                     <option value="">Do not link to any specific goal</option>
                     {savingsGoals.map((g) => (
@@ -861,12 +862,11 @@ export const AiCoachPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+            <div className="pt-3 border-t border-[#E5E7EB] flex items-center justify-end gap-2.5">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setEditingRec(null)}
-                className="text-xs"
               >
                 Cancel
               </Button>
@@ -874,7 +874,6 @@ export const AiCoachPage: React.FC = () => {
                 variant="primary"
                 size="sm"
                 onClick={() => handleRecommendationAction(editingRec.id, 'EDIT', customLimit, selectedGoalId)}
-                className="text-xs bg-teal-700 hover:bg-teal-800 text-white"
               >
                 Save &amp; Activate Limit
               </Button>
