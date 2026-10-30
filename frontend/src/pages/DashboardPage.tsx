@@ -397,7 +397,12 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-4 mt-4 border-t border-slate-100">
+          <div className="pt-4 mt-4 border-t border-slate-100 flex flex-col gap-2">
+            <Link to="/coach">
+              <Button variant="primary" size="sm" className="w-full">
+                Ask AI Financial Coach &rarr;
+              </Button>
+            </Link>
             <Link to="/wellness">
               <Button variant="outline" size="sm" className="w-full">
                 Review Wellness Recommendations

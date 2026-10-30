@@ -112,24 +112,108 @@ export interface LoanOffer {
   disclaimer: string;
 }
 
+export interface SavingsContribution {
+  id: string;
+  goalId: string;
+  amount: number;
+  contributionDate: string;
+  note?: string;
+  createdAt: string;
+}
+
 export interface SavingsGoal {
   id: string;
   name: string;
   targetAmount: number;
   currentAmount: number;
+  remainingAmount?: number;
+  progressPercentage?: number;
   targetDate: string;
   status: 'IN_PROGRESS' | 'COMPLETED' | 'PAUSED';
   suggestedDailySaving: number;
+  contributions?: SavingsContribution[];
+}
+
+export interface PaymentRecord {
+  id: string;
+  repaymentId: string;
+  amountPaid: number;
+  paymentDate: string;
+  paymentMethod: string;
+  notes?: string;
+  createdAt: string;
 }
 
 export interface RepaymentSchedule {
   id: string;
+  facilityType?: 'LOAN' | 'BILL';
   loanName: string;
   provider: string;
   installmentAmount: number;
   dueDate: string;
-  status: 'PAID' | 'DUE' | 'UPCOMING';
+  status: 'PAID' | 'DUE' | 'UPCOMING' | 'OVERDUE';
   principalRemaining: number;
+  totalPrincipal?: number | null;
+  isRecurring?: boolean;
+  frequency?: string;
+  notes?: string;
+  urgency?: 'OVERDUE' | 'DUE_SOON' | 'UPCOMING' | 'SETTLED';
+  payments?: PaymentRecord[];
+}
+
+export interface CategorySpendingItem {
+  category: string;
+  categoryLabel: string;
+  currentMonthlySpend: number;
+  percentageOfExpenses: number;
+  percentageOfIncome: number;
+  monthlyTrend: 'INCREASING' | 'STABLE' | 'DECREASING';
+  isOpportunity: boolean;
+  suggestedMonthlyLimit?: number | null;
+  potentialMonthlySavings?: number | null;
+  opportunityExplanation?: string | null;
+  needsReview?: boolean;
+}
+
+export interface SpendingAnalysis {
+  monthsAnalyzed: number;
+  isSufficient: boolean;
+  sufficiencyNote: string;
+  averageMonthlyIncome: number;
+  averageMonthlyExpenses: number;
+  netMonthlySavings: number;
+  savingsRatePct: number;
+  categoryBreakdown: CategorySpendingItem[];
+  potentialTotalMonthlySavings: number;
+  potentialTotalAnnualSavings: number;
+  reportingPeriodLabel?: string;
+}
+
+export interface BudgetRecommendation {
+  id: string;
+  category: string;
+  categoryLabel: string;
+  currentMonthlySpend: number;
+  suggestedMonthlyLimit: number;
+  expectedMonthlySavings: number;
+  expectedAnnualSavings: number;
+  reason: string;
+  status: 'PENDING' | 'ACCEPTED' | 'DISMISSED';
+  linkedGoalId?: string | null;
+  linkedGoalName?: string | null;
+  actualCurrentSpend: number;
+  isOverBudget: boolean;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  language: string;
+  createdAt: string;
+  isAiPowered?: boolean;
+  providerUsed?: string;
+  suggestedFollowups?: string[];
 }
 
 export interface StatementUploadPreview {
@@ -139,4 +223,75 @@ export interface StatementUploadPreview {
   validRows: number;
   warningCount: number;
   sampleRows: Array<Record<string, string | number>>;
+}
+
+// Debt-Trap Prevention & Loan Affordability types
+export interface AffordabilityBaseline {
+  userId: string;
+  isSufficient: boolean;
+  monthsAnalyzed: number;
+  transactionsAnalyzed: number;
+  averageMonthlyIncome: number;
+  conservativeMonthlyIncome: number;
+  incomeVariabilityCv: number;
+  essentialLivingExpenses: number;
+  necessaryBusinessExpenses: number;
+  existingLoanCommitments: number;
+  upcomingBills: number;
+  currentSavingsBuffer: number;
+  totalMonthlyOutflows: number;
+  disposableIncomeBeforeLoan: number;
+  conservativeDisposableBeforeLoan: number;
+}
+
+export interface LoanAffordabilityRequest {
+  loanAmount: number;
+  annualInterestRate: number;
+  tenureMonths: number;
+  processingFee?: number;
+}
+
+export interface TenureComparison {
+  tenureMonths: number;
+  monthlyEmi: number;
+  totalInterest: number;
+  totalRepayment: number;
+  monthlyDisposableAfterEmi: number;
+  isViable: boolean;
+}
+
+export interface LoanAffordabilityResult {
+  verdict: 'LIKELY_AFFORDABLE' | 'PROCEED_WITH_CAUTION' | 'NOT_AFFORDABLE' | 'INSUFFICIENT_DATA';
+  reasons: string[];
+  loanParameters: {
+    loanAmount: number;
+    annualInterestRate: number;
+    tenureMonths: number;
+    processingFee: number;
+  };
+  repaymentMetrics: {
+    monthlyEmi: number;
+    totalInterest: number;
+    totalRepayment: number;
+    monthlyDisposableBeforeLoan: number;
+    monthlyDisposableAfterEmi: number;
+    remainingFinancialBuffer: number;
+    totalDebtCommitments: number;
+    foirPercentage: number;
+  };
+  stressTest: {
+    stressIncome: number;
+    stressDisposableAfterEmi: number;
+    stressFoirPercentage: number;
+    passesStressTest: boolean;
+  };
+  userFinancialProfile: AffordabilityBaseline;
+  saferAlternatives: {
+    safeMaxMonthlyEmi: number;
+    safeMaxLoanAmount: number;
+    tenureComparisons: TenureComparison[];
+    saveFirstMonths: number | null;
+    recommendSavingFirst: boolean;
+  };
+  disclaimer: string;
 }

@@ -1,6 +1,6 @@
 import uuid
 from typing import Optional, List
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.orm import Session
@@ -17,8 +17,12 @@ from app.models.entities import (
     LoanOffer,
     LoanApplication,
     SavingsGoal,
+    SavingsGoalContribution,
     Repayment,
-    StatementImport
+    PaymentRecord,
+    StatementImport,
+    BudgetRecommendation,
+    ChatMessageRecord
 )
 from app.schemas.api_models import (
     UserRegisterRequest,
@@ -36,12 +40,32 @@ from app.schemas.api_models import (
     MonthlySummaryItem,
     SavingsGoalCreate,
     SavingsGoalResponse,
+    SavingsContributionCreate,
+    SavingsContributionResponse,
     LoanOfferResponse,
     LoanApplicationRequest,
-    RepaymentResponse
+    RepaymentCreate,
+    RepaymentUpdate,
+    RepaymentResponse,
+    PaymentRecordCreate,
+    PaymentRecordResponse,
+    CategorySpendingItem,
+    SpendingAnalysisResponse,
+    BudgetRecommendationResponse,
+    RecommendationActionRequest,
+    ChatRequest,
+    ChatMessageResponse,
+    ChatResponse,
+    LoanAffordabilityRequest,
+    AffordabilityBaselineResponse,
+    LoanAffordabilityResponse
 )
 from app.scoring.engine import calculate_financial_trust_score
 from app.imports.statement_parser import parse_csv_statement
+from app.analytics.loan_affordability import (
+    get_user_affordability_baseline,
+    evaluate_loan_affordability
+)
 
 router = APIRouter()
 
@@ -689,8 +713,76 @@ def apply_simulated_loan(
     }
 
 # -------------------------------------------------------------
-# 9. Savings Goals & Repayments
+# 8B. Debt-Trap Prevention Engine & Loan Affordability
 # -------------------------------------------------------------
+@router.get("/loans/affordability-baseline", response_model=AffordabilityBaselineResponse)
+def get_loan_affordability_baseline_route(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns the authenticated user's verified financial baseline:
+    income, essential living expenses, business expenses, existing debt commitments,
+    and monthly disposable buffer.
+    """
+    return get_user_affordability_baseline(db, current_user.id)
+
+@router.post("/loans/affordability-check", response_model=LoanAffordabilityResponse)
+def check_loan_affordability_route(
+    payload: LoanAffordabilityRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Evaluates proposed borrowing parameters against the authenticated user's verified
+    cash flow, existing debt obligations, and -25% stress scenario.
+    """
+    try:
+        return evaluate_loan_affordability(
+            db=db,
+            user_id=current_user.id,
+            loan_amount=payload.loan_amount,
+            annual_interest_rate=payload.annual_interest_rate,
+            tenure_months=payload.tenure_months,
+            processing_fee=payload.processing_fee or 0.0
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# -------------------------------------------------------------
+# 9. Savings Goals & Contributions
+# -------------------------------------------------------------
+def format_savings_goal(g: SavingsGoal) -> dict:
+    target_amt = float(g.target_amount)
+    curr_amt = float(g.current_amount)
+    rem_amt = max(0.0, round(target_amt - curr_amt, 2))
+    prog_pct = min(100.0, round((curr_amt / target_amt) * 100, 1)) if target_amt > 0 else 0.0
+
+    contributions_list = [
+        {
+            "id": c.id,
+            "goal_id": c.goal_id,
+            "amount": float(c.amount),
+            "contribution_date": c.contribution_date.strftime("%Y-%m-%d"),
+            "note": c.note,
+            "created_at": c.created_at.strftime("%Y-%m-%d %H:%M")
+        }
+        for c in (g.contributions or [])
+    ]
+
+    return {
+        "id": g.id,
+        "goal_name": g.goal_name,
+        "target_amount": target_amt,
+        "current_amount": curr_amt,
+        "remaining_amount": rem_amt,
+        "progress_percentage": prog_pct,
+        "target_date": g.target_date.strftime("%Y-%m-%d"),
+        "status": g.status,
+        "suggested_daily_saving": float(g.suggested_daily_saving),
+        "contributions": contributions_list
+    }
+
 @router.get("/savings-goals", response_model=list[SavingsGoalResponse])
 def get_savings_goals(
     current_user: User = Depends(get_current_user),
@@ -700,18 +792,7 @@ def get_savings_goals(
         SavingsGoal.user_id == current_user.id
     ).order_by(desc(SavingsGoal.created_at)).all()
 
-    return [
-        {
-            "id": g.id,
-            "goal_name": g.goal_name,
-            "target_amount": float(g.target_amount),
-            "current_amount": float(g.current_amount),
-            "target_date": g.target_date.strftime("%Y-%m-%d"),
-            "status": g.status,
-            "suggested_daily_saving": float(g.suggested_daily_saving)
-        }
-        for g in goals
-    ]
+    return [format_savings_goal(g) for g in goals]
 
 @router.post("/savings-goals", response_model=SavingsGoalResponse)
 def create_savings_goal(
@@ -733,57 +814,683 @@ def create_savings_goal(
         suggested_daily_saving=suggested_daily
     )
     db.add(new_goal)
+    db.flush()
+
+    # Record initial funding exactly once if greater than 0
+    if payload.current_amount > 0:
+        init_contrib = SavingsGoalContribution(
+            goal_id=new_goal.id,
+            user_id=current_user.id,
+            amount=payload.current_amount,
+            contribution_date=date.today(),
+            note="Initial Goal Funding"
+        )
+        db.add(init_contrib)
+
     db.commit()
     db.refresh(new_goal)
 
+    return format_savings_goal(new_goal)
+
+@router.post("/savings-goals/{goal_id}/contributions", response_model=SavingsGoalResponse)
+def add_savings_contribution(
+    goal_id: str,
+    payload: SavingsContributionCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    goal = db.query(SavingsGoal).filter(
+        SavingsGoal.id == goal_id,
+        SavingsGoal.user_id == current_user.id
+    ).first()
+    if not goal:
+        raise HTTPException(status_code=404, detail="Savings goal not found.")
+
+    contrib_date = payload.contribution_date or date.today()
+    contrib = SavingsGoalContribution(
+        goal_id=goal.id,
+        user_id=current_user.id,
+        amount=payload.amount,
+        contribution_date=contrib_date,
+        note=payload.note
+    )
+    db.add(contrib)
+
+    # Increment current_amount and recalculate progress/daily saving
+    goal.current_amount = goal.current_amount + payload.amount
+    diff_days = max(1, (goal.target_date - date.today()).days)
+    needed = max(Decimal("0.00"), goal.target_amount - goal.current_amount)
+    goal.suggested_daily_saving = Decimal(str(round(float(needed) / diff_days, 2)))
+
+    if goal.current_amount >= goal.target_amount:
+        goal.status = "COMPLETED"
+    else:
+        goal.status = "IN_PROGRESS"
+
+    db.commit()
+    db.refresh(goal)
+
+    return format_savings_goal(goal)
+
+@router.get("/savings-goals/{goal_id}/contributions", response_model=list[SavingsContributionResponse])
+def get_goal_contributions(
+    goal_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    goal = db.query(SavingsGoal).filter(
+        SavingsGoal.id == goal_id,
+        SavingsGoal.user_id == current_user.id
+    ).first()
+    if not goal:
+        raise HTTPException(status_code=404, detail="Savings goal not found.")
+
+    contributions = db.query(SavingsGoalContribution).filter(
+        SavingsGoalContribution.goal_id == goal.id,
+        SavingsGoalContribution.user_id == current_user.id
+    ).order_by(desc(SavingsGoalContribution.contribution_date)).all()
+
+    return [
+        {
+            "id": c.id,
+            "goal_id": c.goal_id,
+            "amount": float(c.amount),
+            "contribution_date": c.contribution_date.strftime("%Y-%m-%d"),
+            "note": c.note,
+            "created_at": c.created_at.strftime("%Y-%m-%d %H:%M")
+        }
+        for c in contributions
+    ]
+
+# -------------------------------------------------------------
+# 10. Repayments & Bills Management
+# -------------------------------------------------------------
+def calculate_urgency(due_dt: date, is_settled: bool) -> str:
+    if is_settled:
+        return "SETTLED"
+    today = date.today()
+    if due_dt < today:
+        return "OVERDUE"
+    elif due_dt <= today + timedelta(days=7):
+        return "DUE_SOON"
+    else:
+        return "UPCOMING"
+
+def format_repayment(r: Repayment) -> dict:
+    is_settled = r.status == "PAID" or (r.facility_type == "LOAN" and float(r.principal_remaining) <= 0)
+    urgency = calculate_urgency(r.due_date, is_settled)
+
+    payments_list = [
+        {
+            "id": p.id,
+            "repayment_id": p.repayment_id,
+            "amount_paid": float(p.amount_paid),
+            "payment_date": p.payment_date.strftime("%Y-%m-%d"),
+            "payment_method": p.payment_method,
+            "notes": p.notes,
+            "created_at": p.created_at.strftime("%Y-%m-%d %H:%M")
+        }
+        for p in (r.payments or [])
+    ]
+
     return {
-        "id": new_goal.id,
-        "goal_name": new_goal.goal_name,
-        "target_amount": float(new_goal.target_amount),
-        "current_amount": float(new_goal.current_amount),
-        "target_date": new_goal.target_date.strftime("%Y-%m-%d"),
-        "status": new_goal.status,
-        "suggested_daily_saving": float(new_goal.suggested_daily_saving)
+        "id": r.id,
+        "facility_type": r.facility_type or "LOAN",
+        "loan_name": r.loan_name,
+        "provider": r.provider,
+        "installment_amount": float(r.installment_amount),
+        "due_date": r.due_date.strftime("%Y-%m-%d"),
+        "status": r.status,
+        "principal_remaining": float(r.principal_remaining),
+        "total_principal": float(r.total_principal) if r.total_principal is not None else None,
+        "is_recurring": bool(r.is_recurring),
+        "frequency": r.frequency or "MONTHLY",
+        "notes": r.notes,
+        "urgency": urgency,
+        "payments": payments_list
     }
 
 @router.get("/repayments", response_model=list[RepaymentResponse])
 def get_repayments(
+    facility_type: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    reps = db.query(Repayment).filter(Repayment.user_id == current_user.id).all()
-    # If user has no custom repayments, generate simulated demonstration schedules
-    if not reps:
-        return [
-            {
-                "id": "REP-101",
-                "loan_name": "Kavach Fuel Micro-Line (Simulated)",
-                "provider": "Fictional MicroFin Partner",
-                "installment_amount": 1250.0,
-                "due_date": "2026-11-05",
-                "status": "UPCOMING",
-                "principal_remaining": 3750.0
-            },
-            {
-                "id": "REP-102",
-                "loan_name": "Emergency Medical Line (Simulated)",
-                "provider": "Fictional Care Assist Credit",
-                "installment_amount": 850.0,
-                "due_date": "2026-10-15",
-                "status": "PAID",
-                "principal_remaining": 0.0
-            }
-        ]
+    query = db.query(Repayment).filter(Repayment.user_id == current_user.id)
+    if facility_type and facility_type != "ALL":
+        query = query.filter(Repayment.facility_type == facility_type.upper())
+
+    reps = query.order_by(Repayment.due_date.asc()).all()
+
+    # Clean user-specific response with zero mock fallbacks
+    return [format_repayment(r) for r in reps]
+
+@router.post("/repayments", response_model=RepaymentResponse)
+def create_repayment_or_bill(
+    payload: RepaymentCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    f_type = payload.facility_type.upper()
+    if f_type not in ["LOAN", "BILL"]:
+        f_type = "LOAN"
+
+    total_princ = payload.total_principal if f_type == "LOAN" else None
+    princ_rem = payload.total_principal if f_type == "LOAN" and payload.total_principal is not None else (payload.amount if f_type == "LOAN" else Decimal("0.00"))
+
+    # Initial status
+    initial_status = "OVERDUE" if payload.due_date < date.today() else "UPCOMING"
+
+    new_item = Repayment(
+        user_id=current_user.id,
+        facility_type=f_type,
+        loan_name=payload.name,
+        provider=payload.provider,
+        installment_amount=payload.amount,
+        due_date=payload.due_date,
+        total_principal=total_princ,
+        principal_remaining=princ_rem,
+        status=initial_status,
+        is_recurring=payload.is_recurring,
+        frequency=payload.frequency or "MONTHLY",
+        notes=payload.notes
+    )
+    db.add(new_item)
+    db.commit()
+    db.refresh(new_item)
+
+    return format_repayment(new_item)
+
+@router.put("/repayments/{repayment_id}", response_model=RepaymentResponse)
+def update_repayment_or_bill(
+    repayment_id: str,
+    payload: RepaymentUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    item = db.query(Repayment).filter(
+        Repayment.id == repayment_id,
+        Repayment.user_id == current_user.id
+    ).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Facility or bill commitment not found.")
+
+    if payload.facility_type is not None:
+        item.facility_type = payload.facility_type.upper()
+    if payload.name is not None:
+        item.loan_name = payload.name
+    if payload.provider is not None:
+        item.provider = payload.provider
+    if payload.amount is not None:
+        item.installment_amount = payload.amount
+    if payload.total_principal is not None:
+        item.total_principal = payload.total_principal
+    if payload.principal_remaining is not None:
+        item.principal_remaining = payload.principal_remaining
+    if payload.due_date is not None:
+        item.due_date = payload.due_date
+    if payload.is_recurring is not None:
+        item.is_recurring = payload.is_recurring
+    if payload.frequency is not None:
+        item.frequency = payload.frequency
+    if payload.status is not None:
+        item.status = payload.status
+    if payload.notes is not None:
+        item.notes = payload.notes
+
+    db.commit()
+    db.refresh(item)
+    return format_repayment(item)
+
+# -------------------------------------------------------------
+# 11. AI Financial Coach & Spending Analyzer
+# -------------------------------------------------------------
+from app.analytics.spending_analyzer import (
+    analyze_user_spending,
+    sync_user_budget_recommendations,
+    get_budget_tracking
+)
+from app.analytics.ai_coach import (
+    build_user_financial_context,
+    query_ai_financial_coach
+)
+
+@router.get("/coach/spending-analysis", response_model=SpendingAnalysisResponse)
+def get_spending_analysis(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Analyze actual completed transactions belonging exclusively to authenticated user."""
+    analysis = analyze_user_spending(db, current_user.id)
+    return {
+        "months_analyzed": analysis["months_analyzed"],
+        "is_sufficient": analysis["is_sufficient"],
+        "sufficiency_note": analysis["sufficiency_note"],
+        "average_monthly_income": analysis["average_monthly_income"],
+        "average_monthly_expenses": analysis["average_monthly_expenses"],
+        "net_monthly_savings": analysis["net_monthly_savings"],
+        "savings_rate_pct": analysis["savings_rate_pct"],
+        "category_breakdown": analysis["category_breakdown"],
+        "potential_total_monthly_savings": analysis["potential_total_monthly_savings"],
+        "potential_total_annual_savings": analysis["potential_total_annual_savings"]
+    }
+
+@router.get("/coach/recommendations", response_model=list[BudgetRecommendationResponse])
+def get_budget_recommendations(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retrieve verified personalized recommendations with actual spending tracking."""
+    return get_budget_tracking(db, current_user.id)
+
+@router.post("/coach/recommendations/{rec_id}/action", response_model=BudgetRecommendationResponse)
+def take_recommendation_action(
+    rec_id: str,
+    payload: RecommendationActionRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Accept, dismiss, or edit a suggested budget limit, and optionally link to a savings goal."""
+    rec = db.query(BudgetRecommendation).filter(
+        BudgetRecommendation.id == rec_id,
+        BudgetRecommendation.user_id == current_user.id
+    ).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recommendation not found.")
+
+    if payload.action == "DISMISS":
+        rec.status = "DISMISSED"
+    elif payload.action == "ACCEPT":
+        rec.status = "ACCEPTED"
+        if payload.link_goal_id:
+            goal = db.query(SavingsGoal).filter(
+                SavingsGoal.id == payload.link_goal_id,
+                SavingsGoal.user_id == current_user.id
+            ).first()
+            if goal:
+                rec.linked_goal_id = goal.id
+    elif payload.action == "EDIT":
+        rec.status = "ACCEPTED"
+        if payload.custom_limit is not None and payload.custom_limit > 0:
+            rec.suggested_monthly_limit = payload.custom_limit
+            new_savings = max(Decimal("0.00"), rec.current_monthly_spend - payload.custom_limit)
+            rec.expected_monthly_savings = new_savings
+            rec.expected_annual_savings = new_savings * 12
+        if payload.link_goal_id:
+            goal = db.query(SavingsGoal).filter(
+                SavingsGoal.id == payload.link_goal_id,
+                SavingsGoal.user_id == current_user.id
+            ).first()
+            if goal:
+                rec.linked_goal_id = goal.id
+
+    rec.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(rec)
+
+    # Re-fetch tracking for response
+    tracking = get_budget_tracking(db, current_user.id)
+    matched = next((t for t in tracking if t["id"] == rec.id), None)
+    if matched:
+        return matched
+
+    return {
+        "id": rec.id,
+        "category": rec.category,
+        "category_label": rec.category_label,
+        "current_monthly_spend": float(rec.current_monthly_spend),
+        "suggested_monthly_limit": float(rec.suggested_monthly_limit),
+        "expected_monthly_savings": float(rec.expected_monthly_savings),
+        "expected_annual_savings": float(rec.expected_annual_savings),
+        "reason": rec.reason,
+        "status": rec.status,
+        "linked_goal_id": rec.linked_goal_id,
+        "linked_goal_name": None,
+        "actual_current_spend": float(rec.current_monthly_spend),
+        "is_over_budget": float(rec.current_monthly_spend) > float(rec.suggested_monthly_limit)
+    }
+
+@router.post("/coach/chat", response_model=ChatResponse)
+def chat_with_financial_coach(
+    payload: ChatRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Interact with Ask SahayakFin AI Financial Coach.
+    Grounds answers exclusively in the authenticated user's verified financial data.
+    """
+    lang = payload.language or "en"
+
+    # 1. Log incoming user message
+    user_msg = ChatMessageRecord(
+        user_id=current_user.id,
+        role="user",
+        content=payload.message,
+        language=lang
+    )
+    db.add(user_msg)
+    db.commit()
+
+    # 2. Build verified financial context for current user
+    context = build_user_financial_context(db, current_user)
+
+    # 3. Query AI or deterministic reasoning engine
+    coach_result = query_ai_financial_coach(payload.message, context, language=lang)
+
+    # 4. Log assistant response
+    assistant_msg = ChatMessageRecord(
+        user_id=current_user.id,
+        role="assistant",
+        content=coach_result["reply"],
+        language=lang
+    )
+    db.add(assistant_msg)
+    db.commit()
+
+    return {
+        "reply": coach_result["reply"],
+        "language": lang,
+        "is_ai_powered": coach_result.get("is_ai_powered", False),
+        "provider_used": coach_result.get("provider_used", "Deterministic Rules Engine"),
+        "suggested_followups": coach_result.get("suggested_followups", []),
+        "data_citations": coach_result.get("data_citations")
+    }
+
+@router.get("/coach/chat/history", response_model=list[ChatMessageResponse])
+def get_chat_history(
+    limit: int = Query(default=30, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retrieve chat history belonging exclusively to authenticated user."""
+    messages = db.query(ChatMessageRecord).filter(
+        ChatMessageRecord.user_id == current_user.id
+    ).order_by(ChatMessageRecord.created_at.asc()).limit(limit).all()
 
     return [
         {
-            "id": r.id,
-            "loan_name": r.loan_name,
-            "provider": r.provider,
-            "installment_amount": float(r.installment_amount),
-            "due_date": r.due_date.strftime("%Y-%m-%d"),
-            "status": r.status,
-            "principal_remaining": float(r.principal_remaining)
+            "id": m.id,
+            "role": m.role,
+            "content": m.content,
+            "language": m.language,
+            "created_at": m.created_at.strftime("%Y-%m-%d %H:%M")
         }
-        for r in reps
+        for m in messages
     ]
+
+@router.delete("/coach/chat/history")
+def clear_chat_history(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Clear chat history for authenticated user."""
+    db.query(ChatMessageRecord).filter(
+        ChatMessageRecord.user_id == current_user.id
+    ).delete()
+    db.commit()
+    return {"message": "Chat history cleared successfully."}
+
+@router.delete("/repayments/{repayment_id}")
+def delete_repayment_or_bill(
+    repayment_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    item = db.query(Repayment).filter(
+        Repayment.id == repayment_id,
+        Repayment.user_id == current_user.id
+    ).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Facility or bill commitment not found.")
+
+    db.delete(item)
+    db.commit()
+    return {"message": "Facility or bill commitment removed successfully."}
+
+@router.post("/repayments/{repayment_id}/payments", response_model=RepaymentResponse)
+def record_repayment_payment(
+    repayment_id: str,
+    payload: PaymentRecordCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    item = db.query(Repayment).filter(
+        Repayment.id == repayment_id,
+        Repayment.user_id == current_user.id
+    ).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Facility or bill commitment not found.")
+
+    pay_date = payload.payment_date or date.today()
+
+    # 1. Create audit payment record
+    record = PaymentRecord(
+        repayment_id=item.id,
+        user_id=current_user.id,
+        amount_paid=payload.amount,
+        payment_date=pay_date,
+        payment_method=payload.payment_method or "UPI",
+        notes=payload.notes or "Manual user logged installment"
+    )
+    db.add(record)
+
+    # 2. Update status and principal
+    if item.facility_type == "LOAN":
+        # Subtract from loan principal
+        item.principal_remaining = max(Decimal("0.00"), item.principal_remaining - payload.amount)
+        if item.principal_remaining <= Decimal("0.00"):
+            item.status = "PAID"
+            item.paid_at = datetime.utcnow()
+        else:
+            # Partial or regular installment paid
+            if item.is_recurring:
+                if payload.next_due_date:
+                    item.due_date = payload.next_due_date
+                elif payload.advance_next_due_date:
+                    item.due_date = item.due_date + timedelta(days=30)
+                item.status = "UPCOMING"
+    else:
+        # Ordinary bill: keep separate from loan principal
+        if item.is_recurring:
+            if payload.next_due_date:
+                item.due_date = payload.next_due_date
+            elif payload.advance_next_due_date:
+                item.due_date = item.due_date + timedelta(days=30)
+            item.status = "UPCOMING"
+        else:
+            item.status = "PAID"
+            item.paid_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(item)
+    return format_repayment(item)
+
+# -------------------------------------------------------------
+# 11. AI Financial Coach & Spending Analyzer
+# -------------------------------------------------------------
+from app.analytics.spending_analyzer import (
+    analyze_user_spending,
+    sync_user_budget_recommendations,
+    get_budget_tracking
+)
+from app.analytics.ai_coach import (
+    build_user_financial_context,
+    query_ai_financial_coach
+)
+
+@router.get("/coach/spending-analysis", response_model=SpendingAnalysisResponse)
+def get_spending_analysis(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Analyze actual completed transactions belonging exclusively to authenticated user."""
+    analysis = analyze_user_spending(db, current_user.id)
+    return {
+        "months_analyzed": analysis["months_analyzed"],
+        "is_sufficient": analysis["is_sufficient"],
+        "sufficiency_note": analysis["sufficiency_note"],
+        "average_monthly_income": analysis["average_monthly_income"],
+        "average_monthly_expenses": analysis["average_monthly_expenses"],
+        "net_monthly_savings": analysis["net_monthly_savings"],
+        "savings_rate_pct": analysis["savings_rate_pct"],
+        "category_breakdown": analysis["category_breakdown"],
+        "potential_total_monthly_savings": analysis["potential_total_monthly_savings"],
+        "potential_total_annual_savings": analysis["potential_total_annual_savings"]
+    }
+
+@router.get("/coach/recommendations", response_model=list[BudgetRecommendationResponse])
+def get_budget_recommendations(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retrieve verified personalized recommendations with actual spending tracking."""
+    return get_budget_tracking(db, current_user.id)
+
+@router.post("/coach/recommendations/{rec_id}/action", response_model=BudgetRecommendationResponse)
+def take_recommendation_action(
+    rec_id: str,
+    payload: RecommendationActionRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Accept, dismiss, or edit a suggested budget limit, and optionally link to a savings goal."""
+    rec = db.query(BudgetRecommendation).filter(
+        BudgetRecommendation.id == rec_id,
+        BudgetRecommendation.user_id == current_user.id
+    ).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recommendation not found.")
+
+    if payload.action == "DISMISS":
+        rec.status = "DISMISSED"
+    elif payload.action == "ACCEPT":
+        rec.status = "ACCEPTED"
+        if payload.link_goal_id:
+            goal = db.query(SavingsGoal).filter(
+                SavingsGoal.id == payload.link_goal_id,
+                SavingsGoal.user_id == current_user.id
+            ).first()
+            if goal:
+                rec.linked_goal_id = goal.id
+    elif payload.action == "EDIT":
+        rec.status = "ACCEPTED"
+        if payload.custom_limit is not None and payload.custom_limit > 0:
+            rec.suggested_monthly_limit = payload.custom_limit
+            new_savings = max(Decimal("0.00"), rec.current_monthly_spend - payload.custom_limit)
+            rec.expected_monthly_savings = new_savings
+            rec.expected_annual_savings = new_savings * 12
+        if payload.link_goal_id:
+            goal = db.query(SavingsGoal).filter(
+                SavingsGoal.id == payload.link_goal_id,
+                SavingsGoal.user_id == current_user.id
+            ).first()
+            if goal:
+                rec.linked_goal_id = goal.id
+
+    rec.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(rec)
+
+    # Re-fetch tracking for response
+    tracking = get_budget_tracking(db, current_user.id)
+    matched = next((t for t in tracking if t["id"] == rec.id), None)
+    if matched:
+        return matched
+
+    return {
+        "id": rec.id,
+        "category": rec.category,
+        "category_label": rec.category_label,
+        "current_monthly_spend": float(rec.current_monthly_spend),
+        "suggested_monthly_limit": float(rec.suggested_monthly_limit),
+        "expected_monthly_savings": float(rec.expected_monthly_savings),
+        "expected_annual_savings": float(rec.expected_annual_savings),
+        "reason": rec.reason,
+        "status": rec.status,
+        "linked_goal_id": rec.linked_goal_id,
+        "linked_goal_name": None,
+        "actual_current_spend": float(rec.current_monthly_spend),
+        "is_over_budget": float(rec.current_monthly_spend) > float(rec.suggested_monthly_limit)
+    }
+
+@router.post("/coach/chat", response_model=ChatResponse)
+def chat_with_financial_coach(
+    payload: ChatRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Interact with Ask SahayakFin AI Financial Coach.
+    Grounds answers exclusively in the authenticated user's verified financial data.
+    """
+    lang = payload.language or "en"
+
+    # 1. Log incoming user message
+    user_msg = ChatMessageRecord(
+        user_id=current_user.id,
+        role="user",
+        content=payload.message,
+        language=lang
+    )
+    db.add(user_msg)
+    db.commit()
+
+    # 2. Build verified financial context for current user
+    context = build_user_financial_context(db, current_user)
+
+    # 3. Query AI or deterministic reasoning engine
+    coach_result = query_ai_financial_coach(payload.message, context, language=lang)
+
+    # 4. Log assistant response
+    assistant_msg = ChatMessageRecord(
+        user_id=current_user.id,
+        role="assistant",
+        content=coach_result["reply"],
+        language=lang
+    )
+    db.add(assistant_msg)
+    db.commit()
+
+    return {
+        "reply": coach_result["reply"],
+        "language": lang,
+        "is_ai_powered": coach_result.get("is_ai_powered", False),
+        "provider_used": coach_result.get("provider_used", "Deterministic Rules Engine"),
+        "suggested_followups": coach_result.get("suggested_followups", []),
+        "data_citations": coach_result.get("data_citations")
+    }
+
+@router.get("/coach/chat/history", response_model=list[ChatMessageResponse])
+def get_chat_history(
+    limit: int = Query(default=30, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retrieve chat history belonging exclusively to authenticated user."""
+    messages = db.query(ChatMessageRecord).filter(
+        ChatMessageRecord.user_id == current_user.id
+    ).order_by(ChatMessageRecord.created_at.asc()).limit(limit).all()
+
+    return [
+        {
+            "id": m.id,
+            "role": m.role,
+            "content": m.content,
+            "language": m.language,
+            "created_at": m.created_at.strftime("%Y-%m-%d %H:%M")
+        }
+        for m in messages
+    ]
+
+@router.delete("/coach/chat/history")
+def clear_chat_history(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Clear chat history for authenticated user."""
+    db.query(ChatMessageRecord).filter(
+        ChatMessageRecord.user_id == current_user.id
+    ).delete()
+    db.commit()
+    return {"message": "Chat history cleared successfully."}

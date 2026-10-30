@@ -43,8 +43,12 @@ class User(Base):
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
     scores = relationship("FinancialScore", back_populates="user", cascade="all, delete-orphan")
     savings_goals = relationship("SavingsGoal", back_populates="user", cascade="all, delete-orphan")
+    savings_contributions = relationship("SavingsGoalContribution", back_populates="user", cascade="all, delete-orphan")
     loan_applications = relationship("LoanApplication", back_populates="user", cascade="all, delete-orphan")
     repayments = relationship("Repayment", back_populates="user", cascade="all, delete-orphan")
+    payment_records = relationship("PaymentRecord", back_populates="user", cascade="all, delete-orphan")
+    budget_recommendations = relationship("BudgetRecommendation", back_populates="user", cascade="all, delete-orphan")
+    chat_messages = relationship("ChatMessageRecord", back_populates="user", cascade="all, delete-orphan")
 
 class ConsentRecord(Base):
     __tablename__ = "consent_records"
@@ -165,16 +169,37 @@ class Repayment(Base):
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    facility_type = Column(String(20), nullable=False, default="LOAN") # LOAN, BILL
     loan_name = Column(String(120), nullable=False)
     provider = Column(String(120), nullable=False)
     installment_amount = Column(Numeric(12, 2), nullable=False)
     due_date = Column(Date, nullable=False)
-    principal_remaining = Column(Numeric(12, 2), nullable=False)
-    status = Column(String(20), nullable=False, default="UPCOMING") # PAID, UPCOMING, DUE
+    total_principal = Column(Numeric(12, 2), nullable=True)
+    principal_remaining = Column(Numeric(12, 2), nullable=False, default=0.00)
+    status = Column(String(20), nullable=False, default="UPCOMING") # PAID, UPCOMING, OVERDUE, DUE
+    is_recurring = Column(Boolean, nullable=False, default=False)
+    frequency = Column(String(20), nullable=False, default="MONTHLY") # MONTHLY, WEEKLY, ONE_TIME
+    notes = Column(Text, nullable=True)
     paid_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     user = relationship("User", back_populates="repayments")
+    payments = relationship("PaymentRecord", back_populates="repayment", cascade="all, delete-orphan", order_by="desc(PaymentRecord.payment_date)")
+
+class PaymentRecord(Base):
+    __tablename__ = "payment_records"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    repayment_id = Column(String(36), ForeignKey("repayments.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    amount_paid = Column(Numeric(12, 2), nullable=False)
+    payment_date = Column(Date, nullable=False)
+    payment_method = Column(String(30), nullable=False, default="UPI")
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    repayment = relationship("Repayment", back_populates="payments")
+    user = relationship("User", back_populates="payment_records")
 
 class SavingsGoal(Base):
     __tablename__ = "savings_goals"
@@ -190,3 +215,50 @@ class SavingsGoal(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     user = relationship("User", back_populates="savings_goals")
+    contributions = relationship("SavingsGoalContribution", back_populates="goal", cascade="all, delete-orphan", order_by="desc(SavingsGoalContribution.contribution_date)")
+
+class SavingsGoalContribution(Base):
+    __tablename__ = "savings_goal_contributions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    goal_id = Column(String(36), ForeignKey("savings_goals.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    amount = Column(Numeric(12, 2), nullable=False)
+    contribution_date = Column(Date, nullable=False)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    goal = relationship("SavingsGoal", back_populates="contributions")
+    user = relationship("User", back_populates="savings_contributions")
+
+class BudgetRecommendation(Base):
+    __tablename__ = "budget_recommendations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    category = Column(String(50), nullable=False)
+    category_label = Column(String(100), nullable=False)
+    current_monthly_spend = Column(Numeric(12, 2), nullable=False)
+    suggested_monthly_limit = Column(Numeric(12, 2), nullable=False)
+    expected_monthly_savings = Column(Numeric(12, 2), nullable=False)
+    expected_annual_savings = Column(Numeric(12, 2), nullable=False)
+    reason = Column(Text, nullable=False)
+    status = Column(String(20), nullable=False, default="PENDING") # PENDING, ACCEPTED, DISMISSED
+    linked_goal_id = Column(String(36), ForeignKey("savings_goals.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="budget_recommendations")
+    linked_goal = relationship("SavingsGoal")
+
+class ChatMessageRecord(Base):
+    __tablename__ = "chat_message_records"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String(20), nullable=False) # user, assistant
+    content = Column(Text, nullable=False)
+    language = Column(String(10), nullable=False, default="en")
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="chat_messages")

@@ -14,7 +14,9 @@ import {
   Menu, 
   X,
   Bell,
-  ChevronDown
+  ChevronDown,
+  Bot,
+  ShieldAlert
 } from 'lucide-react';
 import { financialService } from '../services/financialService';
 
@@ -40,7 +42,8 @@ export const DashboardLayout: React.FC<LayoutProps> = ({ children }) => {
     { label: 'Upload Statement', path: '/upload', icon: UploadCloud },
     { label: 'Trust Score', path: '/trust-score', icon: ShieldCheck },
     { label: 'Financial Wellness', path: '/wellness', icon: Sparkles },
-    { label: 'Loan Offers', path: '/loans', icon: Banknote },
+    { label: 'AI Financial Coach', path: '/coach', icon: Bot },
+    { label: 'Debt-Trap Prevention', path: '/loans', icon: ShieldAlert },
     { label: 'Savings Goals', path: '/savings', icon: PiggyBank },
     { label: 'Repayments', path: '/repayments', icon: CalendarClock },
     { label: 'Profile & Privacy', path: '/profile', icon: UserCheck },

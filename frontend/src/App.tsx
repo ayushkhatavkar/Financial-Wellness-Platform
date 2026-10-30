@@ -8,6 +8,7 @@ import { TransactionsPage } from './pages/TransactionsPage';
 import { UploadStatementPage } from './pages/UploadStatementPage';
 import { TrustScorePage } from './pages/TrustScorePage';
 import { FinancialWellnessPage } from './pages/FinancialWellnessPage';
+import { AiCoachPage } from './pages/AiCoachPage';
 import { LoanOffersPage } from './pages/LoanOffersPage';
 import { SavingsGoalsPage } from './pages/SavingsGoalsPage';
 import { RepaymentTrackerPage } from './pages/RepaymentTrackerPage';
@@ -61,6 +62,14 @@ export const App: React.FC = () => {
           element={
             <DashboardLayout>
               <FinancialWellnessPage />
+            </DashboardLayout>
+          }
+        />
+        <Route
+          path="/coach"
+          element={
+            <DashboardLayout>
+              <AiCoachPage />
             </DashboardLayout>
           }
         />
