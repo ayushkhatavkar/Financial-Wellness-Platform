@@ -11,7 +11,8 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Text,
-    Index
+    Index,
+    JSON
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
@@ -49,6 +50,8 @@ class User(Base):
     payment_records = relationship("PaymentRecord", back_populates="user", cascade="all, delete-orphan")
     budget_recommendations = relationship("BudgetRecommendation", back_populates="user", cascade="all, delete-orphan")
     chat_messages = relationship("ChatMessageRecord", back_populates="user", cascade="all, delete-orphan")
+    fraud_runs = relationship("FraudAnalysisRun", back_populates="user", cascade="all, delete-orphan")
+    fraud_alerts = relationship("FraudAlert", back_populates="user", cascade="all, delete-orphan")
 
 class ConsentRecord(Base):
     __tablename__ = "consent_records"
@@ -100,11 +103,15 @@ class Transaction(Base):
     is_duplicate_test = Column(Boolean, nullable=False, default=False)
     duplicate_of_transaction_id = Column(String(50), nullable=True)
     is_excluded_from_scoring = Column(Boolean, nullable=False, default=False)
+    exclusion_reason = Column(Text, nullable=True)
+    fraud_review_status = Column(String(30), nullable=True) # PENDING_REVIEW, CONFIRMED_INVALID, CLEARED
+    fraud_risk_score = Column(Numeric(5, 2), nullable=True)
     user_corrected_category = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     user = relationship("User", back_populates="transactions")
     statement_import = relationship("StatementImport", back_populates="transactions")
+    fraud_alerts = relationship("FraudAlert", back_populates="transaction")
 
     __table_args__ = (
         Index("idx_user_date", "user_id", "transaction_date"),
@@ -262,3 +269,45 @@ class ChatMessageRecord(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     user = relationship("User", back_populates="chat_messages")
+
+class FraudAnalysisRun(Base):
+    __tablename__ = "fraud_analysis_runs"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    import_id = Column(String(36), ForeignKey("statement_imports.id", ondelete="SET NULL"), nullable=True, index=True)
+    total_analyzed = Column(Integer, nullable=False, default=0)
+    flagged_count = Column(Integer, nullable=False, default=0)
+    review_status = Column(String(30), nullable=False, default="CLEAR") # CLEAR, REVIEW_RECOMMENDED, INSUFFICIENT_DATA
+    anomaly_score = Column(Numeric(5, 2), nullable=False, default=0.00)
+    category_counts = Column(JSON, nullable=True)
+    run_metadata = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="fraud_runs")
+    alerts = relationship("FraudAlert", back_populates="run", cascade="all, delete-orphan", order_by="desc(FraudAlert.created_at)")
+
+class FraudAlert(Base):
+    __tablename__ = "fraud_alerts"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    run_id = Column(String(36), ForeignKey("fraud_analysis_runs.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    transaction_id = Column(String(50), ForeignKey("transactions.id", ondelete="SET NULL"), nullable=True, index=True)
+    external_ref = Column(String(100), nullable=True)
+    rule_id = Column(String(50), nullable=False, index=True)
+    rule_name = Column(String(120), nullable=False)
+    category = Column(String(50), nullable=False, index=True) # DUPLICATE, CIRCULAR_TRANSFER, INCOME_SPIKE, SELF_TRANSFER, SUSPICIOUS_REPETITION
+    severity = Column(String(20), nullable=False, default="MEDIUM") # LOW, MEDIUM, HIGH
+    explanation = Column(Text, nullable=False)
+    evidence = Column(JSON, nullable=True)
+    review_status = Column(String(30), nullable=False, default="PENDING_REVIEW") # PENDING_REVIEW, CONFIRMED_INVALID, CLEARED
+    review_notes = Column(Text, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    reviewed_by = Column(String(50), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="fraud_alerts")
+    run = relationship("FraudAnalysisRun", back_populates="alerts")
+    transaction = relationship("Transaction", back_populates="fraud_alerts")

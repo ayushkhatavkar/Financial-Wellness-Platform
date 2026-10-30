@@ -195,7 +195,22 @@ export const TransactionsPage: React.FC = () => {
                       {tx.paymentMethod}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <StatusBadge status={tx.status} />
+                      <div className="flex flex-col gap-1 items-start">
+                        <StatusBadge status={tx.status} />
+                        {tx.fraud_review_status === 'PENDING_REVIEW' && (
+                          <span className="text-[10px] font-bold text-[#D18A22] bg-[#FEF9EC] px-1.5 py-0.5 rounded border border-[#F8E2AC]">
+                            Pending Integrity Review
+                          </span>
+                        )}
+                        {tx.is_excluded_from_scoring && (
+                          <span 
+                            title={tx.exclusion_reason || 'Excluded from scoring algorithm'}
+                            className="text-[10px] font-semibold text-[#9299A5] bg-[#F0F2F5] px-1.5 py-0.5 rounded"
+                          >
+                            Excluded from Score
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className={`py-3 px-4 text-right whitespace-nowrap font-bold font-mono-num text-sm ${
                       tx.type === 'CREDIT' ? 'text-[#16865C]' : 'text-[#171B26]'

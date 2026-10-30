@@ -58,9 +58,46 @@ class TransactionResponse(BaseModel):
     balance: Optional[float] = None
     is_refund: bool
     is_duplicate_test: bool
+    is_excluded_from_scoring: Optional[bool] = False
+    exclusion_reason: Optional[str] = None
+    fraud_review_status: Optional[str] = None
+    fraud_risk_score: Optional[float] = None
 
 class TransactionCategoryUpdate(BaseModel):
     category: str
+
+# FraudShield Integrity Schemas
+class FraudAlertResponse(BaseModel):
+    id: Optional[str] = None
+    rule_id: str
+    rule_name: str
+    category: str
+    severity: str
+    explanation: str
+    evidence: dict[str, Any] = Field(default_factory=dict)
+    affected_indices: list[int] = Field(default_factory=list)
+    external_ref: Optional[str] = None
+    review_status: str = "PENDING_REVIEW"
+    review_notes: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    reviewed_by: Optional[str] = None
+    created_at: Optional[str] = None
+
+class IntegrityReportResponse(BaseModel):
+    overall_status: str
+    total_analyzed: int
+    flagged_count: int
+    anomaly_score: float
+    category_counts: dict[str, int]
+    alerts: list[FraudAlertResponse] = Field(default_factory=list)
+    summary_notes: str
+    run_id: Optional[str] = None
+    created_at: Optional[str] = None
+
+class AlertReviewUpdate(BaseModel):
+    review_status: str = Field(..., pattern="^(PENDING_REVIEW|CONFIRMED_INVALID|CLEARED)$")
+    review_notes: Optional[str] = None
+    exclude_from_scoring: Optional[bool] = None
 
 # Statement Import schemas
 class StatementPreviewResponse(BaseModel):
@@ -70,6 +107,8 @@ class StatementPreviewResponse(BaseModel):
     valid_rows: int
     warning_count: int
     sample_rows: list[dict[str, Any]]
+    integrity_report: Optional[IntegrityReportResponse] = None
+    parsed_records: Optional[list[dict[str, Any]]] = None
 
 class StatementImportResponse(BaseModel):
     import_id: str
@@ -79,6 +118,7 @@ class StatementImportResponse(BaseModel):
     duplicate_rows: int
     status: str
     message: str
+    integrity_report: Optional[IntegrityReportResponse] = None
 
 # Score & Dashboard schemas
 class ScoreBreakdownResponse(BaseModel):
@@ -87,6 +127,8 @@ class ScoreBreakdownResponse(BaseModel):
     version: str
     months_of_data: int
     average_monthly_income: float
+    pending_review_count: Optional[int] = 0
+    excluded_records_count: Optional[int] = 0
     components: dict[str, Any]
     explanation: str
 

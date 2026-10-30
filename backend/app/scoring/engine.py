@@ -19,11 +19,18 @@ def calculate_financial_trust_score(
     Formula:
       Score = 0.30*Income + 0.25*Savings + 0.30*Expense + 0.15*Bills
     """
-    # Exclude failed, pending, and duplicate test transactions
+    # Exclude failed, duplicate, and confirmed non-income/invalid transactions
     valid_txns = [
         t for t in transactions 
-        if t.status == "SUCCESS" and not t.is_duplicate_test and not t.is_excluded_from_scoring
+        if t.status == "SUCCESS" and not t.is_duplicate_test and not getattr(t, "is_excluded_from_scoring", False)
     ]
+
+    pending_review_count = sum(
+        1 for t in transactions if getattr(t, "fraud_review_status", None) == "PENDING_REVIEW"
+    )
+    excluded_count = sum(
+        1 for t in transactions if getattr(t, "is_excluded_from_scoring", False) or t.is_duplicate_test
+    )
 
     if not valid_txns:
         return {
@@ -132,11 +139,17 @@ def calculate_financial_trust_score(
         (0.15 * bill_score)
     )
 
+    integrity_note = ""
+    if pending_review_count > 0:
+        integrity_note = f" Notice: {pending_review_count} transaction(s) pending review under FraudShield integrity checks (unresolved items remain visible and are never silently penalized)."
+
     return {
         "score": float(final_score),
         "status": status,
         "months_of_data": months_count,
         "average_monthly_income": round(avg_monthly_income, 2),
+        "pending_review_count": pending_review_count,
+        "excluded_records_count": excluded_count,
         "components": {
             "incomeStability": {
                 "score": round(income_score, 1),
@@ -171,5 +184,5 @@ def calculate_financial_trust_score(
                 "tips": "Recharge mobile plan 48h prior to expiration."
             }
         },
-        "explanation": f"Score calculated from {months_count} months of statement records using the 4-pillar deterministic framework. Qualifies for low-interest micro-working capital facilities."
+        "explanation": f"Score calculated from {months_count} months of statement records using the 4-pillar deterministic framework.{integrity_note} Qualifies for low-interest micro-working capital facilities."
     }

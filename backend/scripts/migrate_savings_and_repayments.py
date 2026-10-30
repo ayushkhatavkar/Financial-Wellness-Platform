@@ -12,56 +12,60 @@ from decimal import Decimal
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from app.db.session import engine, SessionLocal
+from app.db.session import engine, SessionLocal, Base
 from sqlalchemy import text
 from app.models.entities import User, Repayment, SavingsGoal
 
 def run_migration():
     print("Running migration for savings contributions and repayment/bill enhancements...")
-    with engine.begin() as conn:
-        # 1. Update repayments table columns
-        conn.execute(text("""
-            ALTER TABLE repayments 
-            ADD COLUMN IF NOT EXISTS facility_type VARCHAR(20) DEFAULT 'LOAN' NOT NULL,
-            ADD COLUMN IF NOT EXISTS total_principal NUMERIC(12, 2) NULL,
-            ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT FALSE NOT NULL,
-            ADD COLUMN IF NOT EXISTS frequency VARCHAR(20) DEFAULT 'MONTHLY' NOT NULL,
-            ADD COLUMN IF NOT EXISTS notes TEXT NULL;
-        """))
-        print("[OK] repayments table updated with new columns.")
+    if engine.url.drivername.startswith("sqlite"):
+        Base.metadata.create_all(bind=engine)
+        print("[OK] SQLite tables and schema verified via Base.metadata.")
+    else:
+        with engine.begin() as conn:
+            # 1. Update repayments table columns
+            conn.execute(text("""
+                ALTER TABLE repayments 
+                ADD COLUMN IF NOT EXISTS facility_type VARCHAR(20) DEFAULT 'LOAN' NOT NULL,
+                ADD COLUMN IF NOT EXISTS total_principal NUMERIC(12, 2) NULL,
+                ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT FALSE NOT NULL,
+                ADD COLUMN IF NOT EXISTS frequency VARCHAR(20) DEFAULT 'MONTHLY' NOT NULL,
+                ADD COLUMN IF NOT EXISTS notes TEXT NULL;
+            """))
+            print("[OK] repayments table updated with new columns.")
 
-        # 2. Create savings_goal_contributions table
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS savings_goal_contributions (
-                id VARCHAR(36) PRIMARY KEY,
-                goal_id VARCHAR(36) NOT NULL REFERENCES savings_goals(id) ON DELETE CASCADE,
-                user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                amount NUMERIC(12, 2) NOT NULL,
-                contribution_date DATE NOT NULL,
-                note TEXT NULL,
-                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_contrib_goal ON savings_goal_contributions(goal_id);
-            CREATE INDEX IF NOT EXISTS idx_contrib_user ON savings_goal_contributions(user_id);
-        """))
-        print("[OK] savings_goal_contributions table created/verified.")
+            # 2. Create savings_goal_contributions table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS savings_goal_contributions (
+                    id VARCHAR(36) PRIMARY KEY,
+                    goal_id VARCHAR(36) NOT NULL REFERENCES savings_goals(id) ON DELETE CASCADE,
+                    user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    amount NUMERIC(12, 2) NOT NULL,
+                    contribution_date DATE NOT NULL,
+                    note TEXT NULL,
+                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_contrib_goal ON savings_goal_contributions(goal_id);
+                CREATE INDEX IF NOT EXISTS idx_contrib_user ON savings_goal_contributions(user_id);
+            """))
+            print("[OK] savings_goal_contributions table created/verified.")
 
-        # 3. Create payment_records table
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS payment_records (
-                id VARCHAR(36) PRIMARY KEY,
-                repayment_id VARCHAR(36) NOT NULL REFERENCES repayments(id) ON DELETE CASCADE,
-                user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                amount_paid NUMERIC(12, 2) NOT NULL,
-                payment_date DATE NOT NULL,
-                payment_method VARCHAR(30) DEFAULT 'UPI' NOT NULL,
-                notes TEXT NULL,
-                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_payment_repayment ON payment_records(repayment_id);
-            CREATE INDEX IF NOT EXISTS idx_payment_user ON payment_records(user_id);
-        """))
-        print("[OK] payment_records table created/verified.")
+            # 3. Create payment_records table
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS payment_records (
+                    id VARCHAR(36) PRIMARY KEY,
+                    repayment_id VARCHAR(36) NOT NULL REFERENCES repayments(id) ON DELETE CASCADE,
+                    user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    amount_paid NUMERIC(12, 2) NOT NULL,
+                    payment_date DATE NOT NULL,
+                    payment_method VARCHAR(30) DEFAULT 'UPI' NOT NULL,
+                    notes TEXT NULL,
+                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT (NOW() AT TIME ZONE 'utc') NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_payment_repayment ON payment_records(repayment_id);
+                CREATE INDEX IF NOT EXISTS idx_payment_user ON payment_records(user_id);
+            """))
+            print("[OK] payment_records table created/verified.")
 
     # 4. Seed demo commitments for USER0001 (Nitin Kulkarni) if empty
     db = SessionLocal()

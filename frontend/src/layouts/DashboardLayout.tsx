@@ -16,7 +16,8 @@ import {
   ShieldAlert,
   ChevronRight,
   TrendingUp,
-  User as UserIcon
+  User as UserIcon,
+  Scale
 } from 'lucide-react';
 import { financialService } from '../services/financialService';
 
@@ -40,10 +41,11 @@ export const DashboardLayout: React.FC<LayoutProps> = ({ children }) => {
     { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Transactions', path: '/transactions', icon: ArrowLeftRight },
     { label: 'Upload Statement', path: '/upload', icon: UploadCloud },
+    { label: 'FraudShield', path: '/fraud-shield', icon: ShieldAlert },
     { label: 'Trust Score', path: '/trust-score', icon: ShieldCheck },
     { label: 'Financial Wellness', path: '/wellness', icon: Sparkles },
     { label: 'AI Financial Coach', path: '/coach', icon: Bot },
-    { label: 'Debt-Trap Prevention', path: '/loans', icon: ShieldAlert },
+    { label: 'Debt-Trap Prevention', path: '/loans', icon: Scale },
     { label: 'Savings Goals', path: '/savings', icon: PiggyBank },
     { label: 'Repayments', path: '/repayments', icon: CalendarClock },
     { label: 'Profile & Privacy', path: '/profile', icon: UserCheck },

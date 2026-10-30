@@ -11,7 +11,9 @@ import {
   RefreshCw,
   Sparkles,
   Bot,
-  AlertCircle
+  AlertCircle,
+  ShieldAlert,
+  ExternalLink
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -124,6 +126,37 @@ export const DashboardPage: React.FC = () => {
           </div>
         }
       />
+
+      {/* FraudShield Integrity Callout Banner */}
+      {dashboardData?.metrics?.activeIntegrityAlerts > 0 && (
+        <div className="p-4 rounded-lg bg-[#FFF8EE] border border-[#FAD8A5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-md bg-[#F28C28]/10 text-[#F28C28]">
+              <ShieldAlert size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#171B26]">
+                  FraudShield Integrity Attention Required
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F28C28]/15 text-[#DD7416]">
+                  {dashboardData.metrics.activeIntegrityAlerts} {dashboardData.metrics.activeIntegrityAlerts === 1 ? 'alert' : 'alerts'} pending review
+                </span>
+              </div>
+              <p className="text-[12px] text-[#687080] mt-0.5">
+                Potential duplicate entries, circular transfers, or income spikes were detected that may affect your credit calculations.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/fraud-shield"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-[#F28C28] bg-white border border-[#FAD8A5] hover:bg-[#FFF3E0] transition-colors shrink-0"
+          >
+            <span>Review Integrity Ledger</span>
+            <ExternalLink size={13} />
+          </Link>
+        </div>
+      )}
 
       {error && (
         <div className="p-3.5 rounded-lg bg-[#FDF1F1] border border-[#F9D0D0] flex items-center gap-2.5 text-xs text-[#D94B4B]">

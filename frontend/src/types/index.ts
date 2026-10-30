@@ -37,6 +37,10 @@ export interface Transaction {
   balance?: number;
   isRefund?: boolean;
   isDuplicateTest?: boolean;
+  is_excluded_from_scoring?: boolean;
+  exclusion_reason?: string;
+  fraud_review_status?: string;
+  fraud_risk_score?: number;
 }
 
 export interface ScoreBreakdown {
@@ -223,6 +227,56 @@ export interface StatementUploadPreview {
   validRows: number;
   warningCount: number;
   sampleRows: Array<Record<string, string | number>>;
+  integrity_report?: IntegrityReport;
+  parsed_records?: Array<{
+    row_number: number;
+    ref_id?: string;
+    transaction_date: string;
+    description: string;
+    amount: number;
+    transaction_type: string;
+    category: string;
+    counterparty?: string;
+    is_flagged?: boolean;
+    is_excluded_from_scoring?: boolean;
+  }>;
+}
+
+// FraudShield Integrity & Fake Transaction Detection Types
+export interface FraudAlert {
+  id?: string;
+  rule_id: string;
+  rule_name: string;
+  category: 'DUPLICATE' | 'CIRCULAR_TRANSFER' | 'INCOME_SPIKE' | 'SELF_TRANSFER' | 'SUSPICIOUS_REPETITION' | string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH';
+  explanation: string;
+  evidence: Record<string, any>;
+  affected_indices?: number[];
+  external_ref?: string;
+  review_status: 'PENDING_REVIEW' | 'CONFIRMED_INVALID' | 'CLEARED';
+  review_notes?: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
+  created_at?: string;
+}
+
+export interface IntegrityReport {
+  overall_status: 'CLEAR' | 'REVIEW_RECOMMENDED' | 'INSUFFICIENT_DATA' | string;
+  total_analyzed: number;
+  flagged_count: number;
+  anomaly_score: number;
+  category_counts: Record<string, number>;
+  alerts: FraudAlert[];
+  summary_notes: string;
+  run_id?: string;
+  created_at?: string;
+}
+
+export interface DemoFraudSample {
+  sample_type: string;
+  filename: string;
+  csv_content: string;
+  description: string;
 }
 
 // Debt-Trap Prevention & Loan Affordability types

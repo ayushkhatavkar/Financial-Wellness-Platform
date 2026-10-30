@@ -13,6 +13,7 @@ import { LoanOffersPage } from './pages/LoanOffersPage';
 import { SavingsGoalsPage } from './pages/SavingsGoalsPage';
 import { RepaymentTrackerPage } from './pages/RepaymentTrackerPage';
 import { ProfilePrivacyPage } from './pages/ProfilePrivacyPage';
+import { FraudShieldPage } from './pages/FraudShieldPage';
 import { DashboardLayout } from './layouts/DashboardLayout';
 
 export const App: React.FC = () => {
@@ -46,6 +47,14 @@ export const App: React.FC = () => {
           element={
             <DashboardLayout>
               <UploadStatementPage />
+            </DashboardLayout>
+          }
+        />
+        <Route
+          path="/fraud-shield"
+          element={
+            <DashboardLayout>
+              <FraudShieldPage />
             </DashboardLayout>
           }
         />

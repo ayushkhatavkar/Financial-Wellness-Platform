@@ -1,7 +1,8 @@
 import uuid
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime, date, timedelta
 from decimal import Decimal
+from collections import defaultdict
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -22,7 +23,9 @@ from app.models.entities import (
     PaymentRecord,
     StatementImport,
     BudgetRecommendation,
-    ChatMessageRecord
+    ChatMessageRecord,
+    FraudAnalysisRun,
+    FraudAlert
 )
 from app.schemas.api_models import (
     UserRegisterRequest,
@@ -58,10 +61,14 @@ from app.schemas.api_models import (
     ChatResponse,
     LoanAffordabilityRequest,
     AffordabilityBaselineResponse,
-    LoanAffordabilityResponse
+    LoanAffordabilityResponse,
+    FraudAlertResponse,
+    IntegrityReportResponse,
+    AlertReviewUpdate
 )
 from app.scoring.engine import calculate_financial_trust_score
 from app.imports.statement_parser import parse_csv_statement
+from app.fraud import FraudShieldEngine, FraudSeverity, ReviewStatus, OverallStatus, FraudCategory
 from app.analytics.loan_affordability import (
     get_user_affordability_baseline,
     evaluate_loan_affordability
@@ -286,7 +293,11 @@ def get_transactions(
             "status": t.status,
             "balance": float(t.balance) if t.balance else None,
             "is_refund": t.is_refund,
-            "is_duplicate_test": t.is_duplicate_test
+            "is_duplicate_test": t.is_duplicate_test,
+            "is_excluded_from_scoring": t.is_excluded_from_scoring,
+            "exclusion_reason": t.exclusion_reason,
+            "fraud_review_status": t.fraud_review_status,
+            "fraud_risk_score": float(t.fraud_risk_score) if t.fraud_risk_score is not None else None
         }
         for t in results
     ]
@@ -312,7 +323,7 @@ def update_transaction_category(
     return {"message": "Transaction category updated.", "id": tx.id, "new_category": tx.category}
 
 # -------------------------------------------------------------
-# 5. Statement Upload & Import Pipeline
+# 5. Statement Upload & Import Pipeline (FraudShield-Integrated)
 # -------------------------------------------------------------
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB limit
 
@@ -341,10 +352,64 @@ async def preview_statement(
         raise HTTPException(status_code=400, detail="File exceeds maximum allowed size limit of 10MB.")
 
     try:
-        preview, _ = parse_csv_statement(content, file.filename)
-        return preview
+        preview, records = parse_csv_statement(content, file.filename)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    # Fetch user's existing transactions for cross-checking against past uploads
+    existing_txns = db.query(Transaction).filter(Transaction.user_id == current_user.id).all()
+    user_context = {"full_name": current_user.full_name, "user_code": current_user.user_code}
+
+    # Execute FraudShield Detection Pipeline on the uploaded statement
+    integrity_data = FraudShieldEngine.analyze_transactions(
+        records=records,
+        existing_transactions=existing_txns,
+        user_context=user_context
+    )
+
+    flagged_indices = set()
+    for alert in integrity_data.alerts:
+        flagged_indices.update(alert.affected_indices)
+
+    formatted_records = []
+    for idx, rec in enumerate(records):
+        formatted_records.append({
+            "row_number": idx + 1,
+            "ref_id": rec.get("ref_id"),
+            "transaction_date": str(rec.get("transaction_date")),
+            "description": rec.get("description"),
+            "amount": float(rec.get("amount", 0.0)),
+            "transaction_type": rec.get("transaction_type"),
+            "category": rec.get("category"),
+            "counterparty": rec.get("counterparty"),
+            "is_flagged": idx in flagged_indices,
+            "is_excluded_from_scoring": rec.get("is_excluded_from_scoring", False)
+        })
+
+    preview["integrity_report"] = {
+        "overall_status": integrity_data.overall_status,
+        "total_analyzed": integrity_data.total_analyzed,
+        "flagged_count": integrity_data.flagged_count,
+        "anomaly_score": integrity_data.anomaly_score,
+        "category_counts": integrity_data.category_counts,
+        "alerts": [
+            {
+                "rule_id": a.rule_id,
+                "rule_name": a.rule_name,
+                "category": a.category,
+                "severity": a.severity,
+                "explanation": a.explanation,
+                "evidence": a.evidence,
+                "affected_indices": a.affected_indices,
+                "external_ref": a.external_ref,
+                "review_status": a.review_status
+            }
+            for a in integrity_data.alerts
+        ],
+        "summary_notes": integrity_data.summary_notes
+    }
+    preview["parsed_records"] = formatted_records
+    return preview
 
 @router.post("/statements/import", response_model=StatementImportResponse)
 async def commit_statement_import(
@@ -375,7 +440,16 @@ async def commit_statement_import(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    # Log statement import metadata
+    # Fetch existing transactions and execute FraudShield detection server-side (zero trust on frontend)
+    existing_txns = db.query(Transaction).filter(Transaction.user_id == current_user.id).all()
+    user_context = {"full_name": current_user.full_name, "user_code": current_user.user_code}
+    integrity_data = FraudShieldEngine.analyze_transactions(
+        records=records,
+        existing_transactions=existing_txns,
+        user_context=user_context
+    )
+
+    # 1. Log statement import metadata
     stmt_import = StatementImport(
         user_id=current_user.id,
         filename=file.filename,
@@ -387,10 +461,32 @@ async def commit_statement_import(
     db.add(stmt_import)
     db.flush()
 
+    # 2. Persist FraudAnalysisRun record
+    fraud_run = FraudAnalysisRun(
+        user_id=current_user.id,
+        import_id=stmt_import.id,
+        total_analyzed=integrity_data.total_analyzed,
+        flagged_count=integrity_data.flagged_count,
+        review_status=integrity_data.overall_status,
+        anomaly_score=Decimal(str(integrity_data.anomaly_score)),
+        category_counts=integrity_data.category_counts,
+        run_metadata={"filename": file.filename, "summary_notes": integrity_data.summary_notes},
+        created_at=datetime.utcnow()
+    )
+    db.add(fraud_run)
+    db.flush()
+
+    # Map alert rules by affected index
+    index_to_alerts = defaultdict(list)
+    for alert in integrity_data.alerts:
+        for idx in alert.affected_indices:
+            index_to_alerts[idx].append(alert)
+
     inserted = 0
     duplicates = 0
+    inserted_tx_map: Dict[int, Transaction] = {}
 
-    for rec in records:
+    for idx, rec in enumerate(records):
         external_id = rec.get("ref_id", "")
         has_real_ref = bool(external_id and not str(external_id).startswith("CSV-"))
 
@@ -414,6 +510,29 @@ async def commit_statement_import(
             duplicates += 1
             continue
 
+        # Check FraudShield alerts for this row
+        row_alerts = index_to_alerts.get(idx, [])
+        is_excluded = rec.get("is_excluded_from_scoring", False)
+        exclusion_reason = None
+        fraud_review_status = "CLEARED" if not row_alerts else "PENDING_REVIEW"
+        fraud_risk_score = Decimal("0.00")
+
+        for a in row_alerts:
+            if a.category == "DUPLICATE":
+                is_excluded = True
+                exclusion_reason = f"CONFIRMED_DUPLICATE: {a.rule_name}"
+                fraud_review_status = "CONFIRMED_INVALID"
+                fraud_risk_score = max(fraud_risk_score, Decimal("85.00"))
+            elif a.category == "SELF_TRANSFER":
+                is_excluded = True
+                exclusion_reason = f"NON_INCOME_TRANSFER: {a.rule_name}"
+                fraud_risk_score = max(fraud_risk_score, Decimal("25.00"))
+            elif a.category in ("CIRCULAR_TRANSFER", "INCOME_SPIKE", "SUSPICIOUS_REPETITION"):
+                # Suspicious but unconfirmed: DO NOT automatically exclude or label fraudulent!
+                # Keep pending review with score transparency.
+                fraud_review_status = "PENDING_REVIEW"
+                fraud_risk_score = max(fraud_risk_score, Decimal("65.00" if a.severity == "HIGH" else "40.00"))
+
         new_tx = Transaction(
             id=f"TXN-{uuid.uuid4().hex[:10].upper()}",
             user_id=current_user.id,
@@ -427,12 +546,59 @@ async def commit_statement_import(
             counterparty=rec.get("counterparty", "Self/Vendor"),
             status=rec.get("status", "SUCCESS"),
             is_refund=rec.get("is_refund", False),
-            is_excluded_from_scoring=rec.get("is_excluded_from_scoring", False),
+            is_excluded_from_scoring=is_excluded,
+            exclusion_reason=exclusion_reason,
+            fraud_review_status=fraud_review_status,
+            fraud_risk_score=fraud_risk_score,
             duplicate_of_transaction_id=str(external_id) if has_real_ref else None,
             created_at=datetime.utcnow()
         )
         db.add(new_tx)
         inserted += 1
+        inserted_tx_map[idx] = new_tx
+
+    db.flush()
+
+    # 3. Persist individual FraudAlert records linked to fraud run & transactions
+    saved_alerts_payload = []
+    for a in integrity_data.alerts:
+        linked_tx_id = None
+        for idx in a.affected_indices:
+            if idx in inserted_tx_map:
+                linked_tx_id = inserted_tx_map[idx].id
+                break
+
+        db_alert = FraudAlert(
+            run_id=fraud_run.id,
+            user_id=current_user.id,
+            transaction_id=linked_tx_id,
+            external_ref=a.external_ref,
+            rule_id=a.rule_id,
+            rule_name=a.rule_name,
+            category=a.category,
+            severity=a.severity,
+            explanation=a.explanation,
+            evidence=a.evidence,
+            review_status="CONFIRMED_INVALID" if a.category == "DUPLICATE" else "PENDING_REVIEW",
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        db.add(db_alert)
+        db.flush()
+
+        saved_alerts_payload.append({
+            "id": db_alert.id,
+            "rule_id": db_alert.rule_id,
+            "rule_name": db_alert.rule_name,
+            "category": db_alert.category,
+            "severity": db_alert.severity,
+            "explanation": db_alert.explanation,
+            "evidence": db_alert.evidence or {},
+            "affected_indices": a.affected_indices,
+            "external_ref": db_alert.external_ref,
+            "review_status": db_alert.review_status,
+            "created_at": db_alert.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        })
 
     stmt_import.imported_rows = inserted
     stmt_import.duplicate_rows = duplicates
@@ -445,7 +611,300 @@ async def commit_statement_import(
         "imported_rows": inserted,
         "duplicate_rows": duplicates,
         "status": "SUCCESS",
-        "message": f"Successfully ingested {inserted} records. {duplicates} duplicates safely bypassed."
+        "message": f"Successfully ingested {inserted} records. {duplicates} duplicates safely bypassed.",
+        "integrity_report": {
+            "overall_status": fraud_run.review_status,
+            "total_analyzed": fraud_run.total_analyzed,
+            "flagged_count": fraud_run.flagged_count,
+            "anomaly_score": float(fraud_run.anomaly_score),
+            "category_counts": fraud_run.category_counts or {},
+            "alerts": saved_alerts_payload,
+            "summary_notes": integrity_data.summary_notes,
+            "run_id": fraud_run.id,
+            "created_at": fraud_run.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
+    }
+
+# -------------------------------------------------------------
+# 5b. SahayakFin FraudShield — Integrity & Alert Endpoints
+# -------------------------------------------------------------
+@router.get("/fraud/report/latest", response_model=IntegrityReportResponse)
+def get_latest_integrity_report(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Fetch the user's latest stored FraudAnalysisRun or dynamically evaluate active transactions.
+    """
+    latest_run = db.query(FraudAnalysisRun).filter(
+        FraudAnalysisRun.user_id == current_user.id
+    ).order_by(desc(FraudAnalysisRun.created_at)).first()
+
+    if latest_run:
+        alerts = db.query(FraudAlert).filter(FraudAlert.run_id == latest_run.id).all()
+        return {
+            "overall_status": latest_run.review_status,
+            "total_analyzed": latest_run.total_analyzed,
+            "flagged_count": latest_run.flagged_count,
+            "anomaly_score": float(latest_run.anomaly_score),
+            "category_counts": latest_run.category_counts or {},
+            "alerts": [
+                {
+                    "id": a.id,
+                    "rule_id": a.rule_id,
+                    "rule_name": a.rule_name,
+                    "category": a.category,
+                    "severity": a.severity,
+                    "explanation": a.explanation,
+                    "evidence": a.evidence or {},
+                    "affected_indices": [],
+                    "external_ref": a.external_ref,
+                    "review_status": a.review_status,
+                    "review_notes": a.review_notes,
+                    "reviewed_at": a.reviewed_at.strftime("%Y-%m-%d %H:%M:%S") if a.reviewed_at else None,
+                    "reviewed_by": a.reviewed_by,
+                    "created_at": a.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                }
+                for a in alerts
+            ],
+            "summary_notes": (latest_run.run_metadata or {}).get("summary_notes", "Latest integrity analysis report."),
+            "run_id": latest_run.id,
+            "created_at": latest_run.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+    # If no run exists, analyze existing transactions from database
+    txns = db.query(Transaction).filter(Transaction.user_id == current_user.id).order_by(Transaction.transaction_date).all()
+    records = [
+        {
+            "ref_id": t.duplicate_of_transaction_id or t.id,
+            "transaction_date": t.transaction_date,
+            "description": t.description,
+            "amount": float(t.amount),
+            "transaction_type": t.transaction_type,
+            "category": t.category,
+            "counterparty": t.counterparty,
+            "status": t.status,
+            "is_refund": t.is_refund,
+            "is_excluded_from_scoring": t.is_excluded_from_scoring
+        }
+        for t in txns
+    ]
+
+    integrity_data = FraudShieldEngine.analyze_transactions(
+        records=records,
+        user_context={"full_name": current_user.full_name, "user_code": current_user.user_code}
+    )
+
+    return {
+        "overall_status": integrity_data.overall_status,
+        "total_analyzed": integrity_data.total_analyzed,
+        "flagged_count": integrity_data.flagged_count,
+        "anomaly_score": integrity_data.anomaly_score,
+        "category_counts": integrity_data.category_counts,
+        "alerts": [
+            {
+                "id": None,
+                "rule_id": a.rule_id,
+                "rule_name": a.rule_name,
+                "category": a.category,
+                "severity": a.severity,
+                "explanation": a.explanation,
+                "evidence": a.evidence,
+                "affected_indices": a.affected_indices,
+                "external_ref": a.external_ref,
+                "review_status": a.review_status,
+                "review_notes": None,
+                "reviewed_at": None,
+                "reviewed_by": None,
+                "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            for a in integrity_data.alerts
+        ],
+        "summary_notes": integrity_data.summary_notes,
+        "run_id": None,
+        "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+@router.get("/fraud/alerts", response_model=List[FraudAlertResponse])
+def get_fraud_alerts(
+    category: Optional[str] = None,
+    severity: Optional[str] = None,
+    review_status: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Fetch all integrity alerts for the authenticated user with optional filtering.
+    """
+    query = db.query(FraudAlert).filter(FraudAlert.user_id == current_user.id)
+    if category and category != "ALL":
+        query = query.filter(FraudAlert.category == category)
+    if severity and severity != "ALL":
+        query = query.filter(FraudAlert.severity == severity.upper())
+    if review_status and review_status != "ALL":
+        query = query.filter(FraudAlert.review_status == review_status.upper())
+
+    alerts = query.order_by(desc(FraudAlert.created_at)).all()
+    return [
+        {
+            "id": a.id,
+            "rule_id": a.rule_id,
+            "rule_name": a.rule_name,
+            "category": a.category,
+            "severity": a.severity,
+            "explanation": a.explanation,
+            "evidence": a.evidence or {},
+            "affected_indices": [],
+            "external_ref": a.external_ref,
+            "review_status": a.review_status,
+            "review_notes": a.review_notes,
+            "reviewed_at": a.reviewed_at.strftime("%Y-%m-%d %H:%M:%S") if a.reviewed_at else None,
+            "reviewed_by": a.reviewed_by,
+            "created_at": a.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        for a in alerts
+    ]
+
+@router.patch("/fraud/alerts/{alert_id}/review", response_model=FraudAlertResponse)
+def review_fraud_alert(
+    alert_id: str,
+    payload: AlertReviewUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Submit manual review and correction for a flagged integrity alert.
+    Enforces user isolation, logs audit trail, and safely updates scoring exclusions.
+    """
+    alert = db.query(FraudAlert).filter(
+        FraudAlert.id == alert_id,
+        FraudAlert.user_id == current_user.id
+    ).first()
+
+    if not alert:
+        raise HTTPException(status_code=404, detail="Integrity alert record not found.")
+
+    alert.review_status = payload.review_status
+    alert.review_notes = payload.review_notes
+    alert.reviewed_at = datetime.utcnow()
+    alert.reviewed_by = current_user.user_code
+    alert.updated_at = datetime.utcnow()
+
+    # If linked to a transaction, apply resolution to scoring exclusion
+    if alert.transaction_id:
+        tx = db.query(Transaction).filter(
+            Transaction.id == alert.transaction_id,
+            Transaction.user_id == current_user.id
+        ).first()
+
+        if tx:
+            if payload.review_status == "CONFIRMED_INVALID":
+                tx.is_excluded_from_scoring = True
+                tx.exclusion_reason = f"CONFIRMED_INVALID: {alert.rule_name}"
+                tx.fraud_review_status = "CONFIRMED_INVALID"
+            elif payload.review_status == "CLEARED":
+                # Only re-include if not an inherently non-income transaction (like refund or loan)
+                if alert.category not in ("SELF_TRANSFER", "DUPLICATE"):
+                    tx.is_excluded_from_scoring = False
+                    tx.exclusion_reason = None
+                tx.fraud_review_status = "CLEARED"
+            elif payload.review_status == "PENDING_REVIEW":
+                tx.fraud_review_status = "PENDING_REVIEW"
+
+            # Optional explicit override in payload
+            if payload.exclude_from_scoring is not None:
+                tx.is_excluded_from_scoring = payload.exclude_from_scoring
+                if payload.exclude_from_scoring:
+                    tx.exclusion_reason = f"MANUAL_EXCLUSION: {alert.rule_name}"
+
+    # Update parent run review status if all alerts resolved
+    if alert.run_id:
+        run = db.query(FraudAnalysisRun).filter(FraudAnalysisRun.id == alert.run_id).first()
+        if run:
+            remaining_unresolved = db.query(FraudAlert).filter(
+                FraudAlert.run_id == run.id,
+                FraudAlert.review_status == "PENDING_REVIEW"
+            ).count()
+            if remaining_unresolved == 0:
+                run.review_status = "CLEAR"
+
+    db.commit()
+    db.refresh(alert)
+
+    return {
+        "id": alert.id,
+        "rule_id": alert.rule_id,
+        "rule_name": alert.rule_name,
+        "category": alert.category,
+        "severity": alert.severity,
+        "explanation": alert.explanation,
+        "evidence": alert.evidence or {},
+        "affected_indices": [],
+        "external_ref": alert.external_ref,
+        "review_status": alert.review_status,
+        "review_notes": alert.review_notes,
+        "reviewed_at": alert.reviewed_at.strftime("%Y-%m-%d %H:%M:%S") if alert.reviewed_at else None,
+        "reviewed_by": alert.reviewed_by,
+        "created_at": alert.created_at.strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+@router.get("/fraud/demo-samples/{sample_type}")
+def get_fraud_demo_sample(sample_type: str):
+    """
+    Returns synthetic demonstration statement CSV datasets for Hackathon evaluation:
+      - 'normal': clean regular gig payouts + expenses (Verdict: CLEAR)
+      - 'suspicious': duplicate UTRs, ₹75k spike, circular recycling, bursts (Verdict: REVIEW_RECOMMENDED)
+      - 'corrected': verified and deduplicated ledger for recalculating score
+    """
+    sample_type = sample_type.lower().strip()
+    if sample_type == "normal":
+        csv_content = (
+            "Date,Transaction ID,Description,Amount,Type,Counterparty\n"
+            "2026-08-05,UPI-982341908123,Swiggy Weekly Payout,4850.00,CREDIT,Swiggy Delivery\n"
+            "2026-08-07,UPI-982341908124,HPCL Petrol Pump Fuel,450.00,DEBIT,HPCL Fuel Station\n"
+            "2026-08-12,UPI-982341908125,Swiggy Weekly Payout,5200.00,CREDIT,Swiggy Delivery\n"
+            "2026-08-14,UPI-982341908126,Bistro Mess Lunch,180.00,DEBIT,Annapurna Canteen\n"
+            "2026-08-19,UPI-982341908127,Swiggy Weekly Payout,4950.00,CREDIT,Swiggy Delivery\n"
+            "2026-08-21,UPI-982341908128,Airtel 5G Monthly Plan,399.00,DEBIT,Airtel Telecom\n"
+            "2026-08-26,UPI-982341908129,Swiggy Weekly Payout,5100.00,CREDIT,Swiggy Delivery\n"
+            "2026-08-28,UPI-982341908130,Vehicle Service & Oil,750.00,DEBIT,Speedy Garage\n"
+        )
+        filename = "normal_gig_statement.csv"
+    elif sample_type == "suspicious":
+        csv_content = (
+            "Date,Transaction ID,Description,Amount,Type,Counterparty\n"
+            "2026-08-05,UPI-884102948101,Swiggy Weekly Payout,4850.00,CREDIT,Swiggy Delivery\n"
+            "2026-08-07,UPI-884102948102,HPCL Petrol Pump,450.00,DEBIT,HPCL Fuel Station\n"
+            "2026-08-10,UPI-884102948101,Swiggy Weekly Payout,4850.00,CREDIT,Swiggy Delivery\n"  # Exact Duplicate UTR
+            "2026-08-12,UPI-884102948103,Received from Rakesh Kumar,12000.00,CREDIT,Rakesh Kumar\n" # Circular in
+            "2026-08-13,UPI-884102948104,Paid to Rakesh Kumar,12000.00,DEBIT,Rakesh Kumar\n"      # Circular out
+            "2026-08-15,UPI-884102948105,Unexplained High Inflow,85000.00,CREDIT,Unknown Sender\n" # Massive Spike
+            "2026-08-17,UPI-884102948106,Transfer to Rohit,4999.00,DEBIT,Rohit S\n"              # Burst 1
+            "2026-08-17,UPI-884102948107,Transfer to Rohit,4999.00,DEBIT,Rohit S\n"              # Burst 2
+            "2026-08-18,UPI-884102948108,Transfer to Rohit,4999.00,DEBIT,Rohit S\n"              # Burst 3
+            "2026-08-20,UPI-884102948109,Transfer from Self Account,10000.00,CREDIT,Own HDFC Acc\n" # Self transfer
+        )
+        filename = "suspicious_manipulated_statement.csv"
+    elif sample_type == "corrected":
+        csv_content = (
+            "Date,Transaction ID,Description,Amount,Type,Counterparty\n"
+            "2026-08-05,UPI-884102948101,Swiggy Weekly Payout,4850.00,CREDIT,Swiggy Delivery\n"
+            "2026-08-07,UPI-884102948102,HPCL Petrol Pump,450.00,DEBIT,HPCL Fuel Station\n"
+            "2026-08-12,UPI-884102948110,Swiggy Weekly Payout,5200.00,CREDIT,Swiggy Delivery\n"
+            "2026-08-14,UPI-884102948111,Food & Canteen,220.00,DEBIT,Annapurna Canteen\n"
+            "2026-08-19,UPI-884102948112,Swiggy Weekly Payout,5050.00,CREDIT,Swiggy Delivery\n"
+            "2026-08-21,UPI-884102948113,Airtel 5G Plan,399.00,DEBIT,Airtel Telecom\n"
+            "2026-08-26,UPI-884102948114,Swiggy Weekly Payout,5150.00,CREDIT,Swiggy Delivery\n"
+        )
+        filename = "corrected_statement.csv"
+    else:
+        raise HTTPException(status_code=400, detail="Invalid sample type. Choose 'normal', 'suspicious', or 'corrected'.")
+
+    return {
+        "sample_type": sample_type,
+        "filename": filename,
+        "csv_content": csv_content,
+        "description": "Synthetic dataset for live Hackathon demonstration of SahayakFin FraudShield."
     }
 
 # -------------------------------------------------------------
@@ -466,6 +925,8 @@ def get_latest_trust_score(
         "version": "v1.0-hackathon",
         "months_of_data": calculated["months_of_data"],
         "average_monthly_income": calculated["average_monthly_income"],
+        "pending_review_count": calculated.get("pending_review_count", 0),
+        "excluded_records_count": calculated.get("excluded_records_count", 0),
         "components": calculated["components"],
         "explanation": calculated["explanation"]
     }
@@ -618,6 +1079,11 @@ def get_dashboard_summary(
         for t in txns[:5]
     ]
 
+    active_alerts_count = db.query(FraudAlert).filter(
+        FraudAlert.user_id == current_user.id,
+        FraudAlert.review_status == "PENDING_REVIEW"
+    ).count()
+
     metrics = {
         "averageMonthlyInflow": avg_income,
         "averageMonthlyExpenses": avg_expenses,
@@ -634,7 +1100,9 @@ def get_dashboard_summary(
         "total_expenses": round(total_expenses, 2),
         "score": score_result.get("score"),
         "monthsOfData": months_count,
-        "expenseCategories": category_breakdown
+        "expenseCategories": category_breakdown,
+        "activeIntegrityAlerts": active_alerts_count,
+        "pendingReviewCount": score_result.get("pending_review_count", 0)
     }
 
     return {

@@ -7,15 +7,16 @@ import {
   SavingsGoal, 
   SavingsContribution,
   RepaymentSchedule, 
-  PaymentRecord,
   StatementUploadPreview,
-  CategorySpendingItem,
   SpendingAnalysis,
   BudgetRecommendation,
   ChatMessage,
   AffordabilityBaseline,
   LoanAffordabilityRequest,
-  LoanAffordabilityResult 
+  LoanAffordabilityResult,
+  FraudAlert,
+  IntegrityReport,
+  DemoFraudSample 
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
@@ -247,6 +248,10 @@ export const financialService = {
       balance: t.balance,
       isRefund: t.is_refund,
       isDuplicateTest: t.is_duplicate_test,
+      is_excluded_from_scoring: t.is_excluded_from_scoring,
+      exclusion_reason: t.exclusion_reason,
+      fraud_review_status: t.fraud_review_status,
+      fraud_risk_score: t.fraud_risk_score,
     }));
   },
 
@@ -276,6 +281,8 @@ export const financialService = {
       validRows: data.valid_rows,
       warningCount: data.warning_count,
       sampleRows: data.sample_rows,
+      integrity_report: data.integrity_report,
+      parsed_records: data.parsed_records,
     };
   },
 
@@ -287,6 +294,37 @@ export const financialService = {
       method: 'POST',
       body: formData,
     });
+  },
+
+  // -------------------------------------------------------------
+  // FraudShield — Financial Data Integrity
+  // -------------------------------------------------------------
+  getLatestFraudReport: async (): Promise<IntegrityReport> => {
+    return await request<IntegrityReport>('/fraud/report/latest');
+  },
+
+  getFraudAlerts: async (params?: { category?: string; severity?: string; review_status?: string }): Promise<FraudAlert[]> => {
+    const q = new URLSearchParams();
+    if (params?.category && params.category !== 'ALL') q.append('category', params.category);
+    if (params?.severity && params.severity !== 'ALL') q.append('severity', params.severity);
+    if (params?.review_status && params.review_status !== 'ALL') q.append('review_status', params.review_status);
+
+    const queryStr = q.toString() ? `?${q.toString()}` : '';
+    return await request<FraudAlert[]>(`/fraud/alerts${queryStr}`);
+  },
+
+  reviewFraudAlert: async (
+    alertId: string,
+    payload: { review_status: string; review_notes?: string; exclude_from_scoring?: boolean }
+  ): Promise<FraudAlert> => {
+    return await request<FraudAlert>(`/fraud/alerts/${alertId}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getFraudDemoSample: async (sampleType: 'normal' | 'suspicious' | 'corrected'): Promise<DemoFraudSample> => {
+    return await request<DemoFraudSample>(`/fraud/demo-samples/${sampleType}`);
   },
 
   // -------------------------------------------------------------
