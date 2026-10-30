@@ -2,34 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color-scheme: light;
-  background-color: #ffffff;
-  color: #0f172a;
+@layer base {
+  :root {
+    --fin-bg: #F7F8FA;
+    --fin-subtle: #F0F2F5;
+    --fin-card: #FFFFFF;
+    --fin-primary: #171B26;
+    --fin-secondary: #687080;
+    --fin-muted: #9299A5;
+    --fin-border: #E5E7EB;
+    --fin-navy: #17243A;
+    --fin-orange: #F28C28;
+    --fin-orange-hover: #DD7416;
+    --fin-gold: #EBCB87;
+    --fin-success: #16865C;
+    --fin-warning: #D18A22;
+    --fin-danger: #D94B4B;
+
+    color-scheme: light;
+  }
+
+  html {
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #F7F8FA;
+    color: #171B26;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: #F7F8FA;
+    color: #171B26;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Financial values, account numbers, dates, numbers */
+  .font-mono-num {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-feature-settings: "tnum" 1, "zero" 1;
+  }
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background-color: #ffffff;
-  color: #0f172a;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Custom scrollbar for fintech tables */
+/* Custom crisp scrollbar for financial tables and ledger */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f8fafc;
+  background: #F0F2F5;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+  background: #CBD5E1;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #94A3B8;
 }
